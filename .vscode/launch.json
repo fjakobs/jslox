@@ -6,6 +6,20 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"args": [
+				"--colors",
+				"${workspaceFolder}/src/jslox/**/*.test.ts"
+			],
+			"internalConsoleOptions": "openOnSessionStart",
+			"name": "Mocha Tests",
+			"program": "${workspaceFolder}/node_modules/.bin/ts-mocha",
+			"request": "launch",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"type": "node"
+		},
+		{
 			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",

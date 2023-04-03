@@ -1,4 +1,4 @@
-import { ErrorReporter } from "./Lox";
+import { ErrorReporter, defaultErrorReporter } from "./Lox";
 import { Token, TokenType } from "./Token";
 
 const keywords: Record<string, TokenType> = {
@@ -18,12 +18,6 @@ const keywords: Record<string, TokenType> = {
     true: "TRUE",
     var: "VAR",
     while: "WHILE",
-};
-
-const defaultErrorReporter: ErrorReporter = {
-    error: (line: number, message: string) => {
-        console.error(`[line ${line}] Error: ${message}`);
-    },
 };
 
 export class Scanner {

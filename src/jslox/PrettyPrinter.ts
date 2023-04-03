@@ -10,7 +10,7 @@ export class PrettyPrinter implements Visitor<string> {
     }
 
     visitLiteral(literal: Literal): string {
-        return literal.value.toString();
+        return literal?.value?.toString() || "nil";
     }
 
     visitUnary(unary: Unary): string {

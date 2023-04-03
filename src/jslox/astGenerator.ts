@@ -2,7 +2,7 @@
 const grammar: Record<string, Array<string>> = {
     Binary: ["Expr left", "Token operator", "Expr right"],
     Grouping: ["Expr expression"],
-    Literal: ["Object value"],
+    Literal: ["string|number|null|boolean value"],
     Unary: ["Token operator", "Expr right"],
 };
 

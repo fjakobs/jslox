@@ -4,6 +4,12 @@ export interface ErrorReporter {
     error(line: number, message: string): void;
 }
 
+export const defaultErrorReporter: ErrorReporter = {
+    error: (line: number, message: string) => {
+        console.error(`[line ${line}] Error: ${message}`);
+    },
+};
+
 export class Lox {
     public hadError = false;
 

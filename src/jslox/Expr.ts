@@ -28,7 +28,7 @@ export class Grouping implements Expr {
 }
 
 export class Literal implements Expr {
-    constructor(readonly value: Object) {}
+    constructor(readonly value: string | number | null | boolean) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitLiteral(this);
