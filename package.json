@@ -27,6 +27,7 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "lox": "ts-node src/jslox/main.ts",
+    "lox:generate": "ts-node src/jslox/astGenerator.ts > src/jslox/Expr.ts",
     "test:lox": "ts-mocha 'src/jslox/**/*.test.ts'"
   },
   "devDependencies": {
