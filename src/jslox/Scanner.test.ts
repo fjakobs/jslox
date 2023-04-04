@@ -58,6 +58,9 @@ describe("Scanner", () => {
                 assert.equal(message, "Unterminated string.");
                 called = true;
             },
+            runtimeError(error) {
+                assert.fail("Unexpected runtime error");
+            },
         });
 
         const tokens = [...scanner.scanTokens()];

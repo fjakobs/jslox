@@ -9,6 +9,9 @@ export async function runFile(filename: string) {
     if (lox.hadError) {
         process.exit(65);
     }
+    if (lox.hadRuntimeError) {
+        process.exit(70);
+    }
 }
 
 export async function runPrompt() {

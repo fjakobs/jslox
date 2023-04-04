@@ -1,17 +1,18 @@
+import { RuntimeError } from "./Error";
+import { Interpreter } from "./Interpreter";
+import { Parser } from "./Parser";
+import { PrettyPrinter } from "./PrettyPrinter";
 import { Scanner } from "./Scanner";
-
-export interface ErrorReporter {
-    error(line: number, message: string): void;
-}
-
-export const defaultErrorReporter: ErrorReporter = {
-    error: (line: number, message: string) => {
-        console.error(`[line ${line}] Error: ${message}`);
-    },
-};
 
 export class Lox {
     public hadError = false;
+    public hadRuntimeError = false;
+
+    readonly interpreter: Interpreter;
+
+    constructor() {
+        this.interpreter = new Interpreter(this);
+    }
 
     error(line: number, message: string) {
         this.report(line, "", message);
@@ -22,11 +23,20 @@ export class Lox {
         this.hadError = true;
     }
 
+    runtimeError(error: RuntimeError) {
+        console.error(error.message);
+        this.hadRuntimeError = true;
+    }
+
     async run(source: string): Promise<any> {
-        console.log(source);
-
         const tokens = new Scanner(source, this).scanTokens();
+        const parser = new Parser(tokens, this);
 
-        return "kinners";
+        const ast = parser.parse();
+        if (this.hadError || !ast) {
+            return;
+        }
+
+        return this.interpreter.interpret(ast);
     }
 }

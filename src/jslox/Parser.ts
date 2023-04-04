@@ -1,5 +1,5 @@
+import { ErrorReporter, defaultErrorReporter } from "./Error";
 import { Binary, Expr, Grouping, Literal, Unary } from "./Expr";
-import { ErrorReporter, defaultErrorReporter } from "./Lox";
 import { Token, TokenType } from "./Token";
 
 export class ParseError extends Error {

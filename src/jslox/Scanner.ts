@@ -1,4 +1,4 @@
-import { ErrorReporter, defaultErrorReporter } from "./Lox";
+import { ErrorReporter, defaultErrorReporter } from "./Error";
 import { Token, TokenType } from "./Token";
 
 const keywords: Record<string, TokenType> = {
