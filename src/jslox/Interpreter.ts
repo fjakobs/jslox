@@ -33,6 +33,9 @@ export class Interpreter implements Visitor<LoxType> {
             case "SLASH":
                 this.assertNumberOperand(binary.operator, left);
                 this.assertNumberOperand(binary.operator, right);
+                if (right === 0) {
+                    throw new RuntimeError(binary.operator, "Division by zero.");
+                }
                 return left / right;
 
             case "STAR":

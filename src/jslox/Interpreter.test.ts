@@ -43,4 +43,18 @@ describe("Interpreter", () => {
         interpreter.interpret(parse('1 + "2"'));
         assert.ok(called);
     });
+
+    it("should report runtime errors for division by zero", () => {
+        let called = false;
+        const errorReporter = {
+            error: (line: number, message: string) => {},
+            runtimeError: () => {
+                called = true;
+            },
+        };
+        const interpreter = new Interpreter(errorReporter);
+
+        interpreter.interpret(parse("1 / 0"));
+        assert.ok(called);
+    });
 });
