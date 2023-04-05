@@ -1,5 +1,5 @@
 import { ErrorReporter, defaultErrorReporter } from "./Error";
-import { Binary, Expr, Grouping, Literal, Print, Stmt, Unary } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Print, Stmt, Unary, Variable, VariableDeclaration } from "./Expr";
 import { Token, TokenType } from "./Token";
 
 export class ParseError extends Error {
@@ -19,22 +19,19 @@ export class Parser {
     ) {}
 
     parse(): Array<Stmt> | null {
-        try {
-            this.advance();
-            //return this.expression();
+        this.advance();
+        if (this.isAtEnd) {
+            return [];
+        }
 
-            const statements: Array<Stmt> = [];
-            while (!this.isAtEnd) {
-                statements.push(this.statement());
-            }
-            return statements;
-        } catch (e) {
-            if (e instanceof ParseError) {
-                return null;
-            } else {
-                throw e;
+        const statements: Array<Stmt> = [];
+        while (!this.isAtEnd) {
+            const declaration = this.declaration();
+            if (declaration) {
+                statements.push(declaration);
             }
         }
+        return statements;
     }
 
     parseExpression(): Expr | null {
@@ -48,6 +45,35 @@ export class Parser {
                 throw e;
             }
         }
+    }
+
+    private declaration(): Stmt | null {
+        try {
+            if (this.match("VAR")) {
+                return this.varDeclaration();
+            } else {
+                return this.statement();
+            }
+        } catch (e) {
+            if (e instanceof ParseError) {
+                this.synchronize();
+                return null;
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    private varDeclaration(): Stmt {
+        const name = this.consume("IDENTIFIER", "Expect variable name.");
+
+        let initializer: Expr | null = null;
+        if (this.match("EQUAL")) {
+            initializer = this.expression();
+        }
+
+        this.consume("SEMICOLON", "Expect ';' after variable declaration.");
+        return new VariableDeclaration(name, initializer || new Literal(null));
     }
 
     private statement(): Stmt {
@@ -149,6 +175,10 @@ export class Parser {
             return new Literal(this.previous!.literal!);
         }
 
+        if (this.match("IDENTIFIER")) {
+            return new Variable(this.previous!);
+        }
+
         if (this.match("LEFT_PAREN")) {
             const expr = this.expression();
             this.consume("RIGHT_PAREN", "Expect ')' after expression.");
@@ -193,7 +223,7 @@ export class Parser {
         return false;
     }
 
-    private advance(): Token | undefined {
+    private advance(): Token {
         this.previous = this.current;
         const next = this.tokens.next();
         this.current = next.value;
@@ -201,7 +231,7 @@ export class Parser {
             this.isAtEnd = true;
         }
 
-        return this.previous;
+        return this.previous!;
     }
 
     private check(type: TokenType): boolean {
@@ -212,7 +242,7 @@ export class Parser {
         return this.current?.type === type;
     }
 
-    private consume(type: TokenType, message: string): Token | undefined {
+    private consume(type: TokenType, message: string): Token {
         if (this.check(type)) {
             return this.advance();
         }

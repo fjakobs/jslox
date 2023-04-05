@@ -1,11 +1,25 @@
-import { stringify } from "node:querystring";
+import { Environment } from "./Environment";
 import { RuntimeError, defaultErrorReporter } from "./Error";
-import { Binary, Expr, Expression, Grouping, Literal, Print, Stmt, Unary, Visitor } from "./Expr";
+import {
+    Binary,
+    Expr,
+    Expression,
+    Grouping,
+    Literal,
+    Print,
+    Stmt,
+    Unary,
+    Variable,
+    VariableDeclaration,
+    Visitor,
+} from "./Expr";
 import { Token } from "./Token";
 
 export type LoxType = null | number | string | boolean;
 
 export class Interpreter implements Visitor<LoxType> {
+    readonly environment = new Environment();
+
     constructor(private readonly errorReporter = defaultErrorReporter) {}
 
     interpret(expr: Expr): LoxType {
@@ -41,6 +55,15 @@ export class Interpreter implements Visitor<LoxType> {
         } else {
             return value.toString();
         }
+    }
+
+    visitVariable(variable: Variable): LoxType {
+        return this.environment.get(variable.name);
+    }
+
+    visitVariableDeclaration(variabledeclaration: VariableDeclaration): LoxType {
+        this.environment.define(variabledeclaration.name.lexeme, variabledeclaration.initializer.visit(this));
+        return null;
     }
 
     visitExpression(expression: Expression): LoxType {

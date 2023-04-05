@@ -12,9 +12,11 @@ export interface Visitor<R> {
     visitBinary(binary: Binary): R;
     visitGrouping(grouping: Grouping): R;
     visitLiteral(literal: Literal): R;
+    visitVariable(variable: Variable): R;
     visitUnary(unary: Unary): R;
     visitExpression(expression: Expression): R;
     visitPrint(print: Print): R;
+    visitVariableDeclaration(variabledeclaration: VariableDeclaration): R;
 }
 
 export class Binary implements Expr {
@@ -34,10 +36,18 @@ export class Grouping implements Expr {
 }
 
 export class Literal implements Expr {
-    constructor(readonly value: string | number | null | boolean) {}
+    constructor(readonly value: string|number|null|boolean) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitLiteral(this);
+    }
+}
+
+export class Variable implements Expr {
+    constructor(readonly name: Token) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitVariable(this);
     }
 }
 
@@ -64,3 +74,13 @@ export class Print implements Stmt {
         return visitor.visitPrint(this);
     }
 }
+
+export class VariableDeclaration implements Stmt {
+    constructor(readonly name: Token, readonly initializer: Expr) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitVariableDeclaration(this);
+    }
+}
+
+

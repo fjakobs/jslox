@@ -55,4 +55,21 @@ describe("Parser", () => {
 
         assert.deepEqual(pretty, ["(+ 1 2)", "(* 3 4)"]);
     });
+
+    it("should parse variable declarations", () => {
+        const parser = new Parser(new Scanner("var a = 1; print a;").scanTokens(), {
+            error: (line: number, message: string) => {
+                assert.fail(`[line ${line}] Error: ${message}`);
+            },
+            runtimeError: (error: RuntimeError) => {
+                assert.fail(error.message);
+            },
+        });
+        const program = parser.parse();
+
+        assert.ok(program !== null);
+        const pretty = program.map((stmt) => stmt.visit(new PrettyPrinter()));
+
+        assert.deepEqual(pretty, ["(var a 1)", "(print a)"]);
+    });
 });

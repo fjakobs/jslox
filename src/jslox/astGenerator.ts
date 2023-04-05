@@ -3,9 +3,12 @@ const grammar: Record<string, Array<string>> = {
     "Binary Expr": ["Expr left", "Token operator", "Expr right"],
     "Grouping Expr": ["Expr expression"],
     "Literal Expr": ["string|number|null|boolean value"],
+    "Variable Expr": ["Token name"],
     "Unary Expr": ["Token operator", "Expr right"],
+
     "Expression Stmt": ["Expr expression"],
     "Print Stmt": ["Expr expression"],
+    "VariableDeclaration Stmt": ["Token name", "Expr initializer"],
 };
 
 const header = `import { Token } from "./Token";

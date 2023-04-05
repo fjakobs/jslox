@@ -1,6 +1,14 @@
-import { Binary, Expression, Grouping, Literal, Print, Unary, Visitor } from "./Expr";
+import { Binary, Expression, Grouping, Literal, Print, Unary, Variable, VariableDeclaration, Visitor } from "./Expr";
 
 export class PrettyPrinter implements Visitor<string> {
+    visitVariable(variable: Variable): string {
+        return variable.name.lexeme;
+    }
+
+    visitVariableDeclaration(variabledeclaration: VariableDeclaration): string {
+        return `(var ${variabledeclaration.name.lexeme} ${variabledeclaration.initializer.visit(this)})`;
+    }
+
     visitExpression(expression: Expression): string {
         return expression.expression.visit(this);
     }
