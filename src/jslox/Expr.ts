@@ -4,11 +4,17 @@ export interface Expr {
     visit<R>(visitor: Visitor<R>): R;
 }
 
+export interface Stmt {
+    visit<R>(visitor: Visitor<R>): R;
+}
+
 export interface Visitor<R> {
     visitBinary(binary: Binary): R;
     visitGrouping(grouping: Grouping): R;
     visitLiteral(literal: Literal): R;
     visitUnary(unary: Unary): R;
+    visitExpression(expression: Expression): R;
+    visitPrint(print: Print): R;
 }
 
 export class Binary implements Expr {
@@ -40,5 +46,21 @@ export class Unary implements Expr {
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitUnary(this);
+    }
+}
+
+export class Expression implements Stmt {
+    constructor(readonly expression: Expr) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitExpression(this);
+    }
+}
+
+export class Print implements Stmt {
+    constructor(readonly expression: Expr) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitPrint(this);
     }
 }

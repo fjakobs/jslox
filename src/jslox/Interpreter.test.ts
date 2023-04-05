@@ -8,7 +8,7 @@ function parse(source: string): Expr {
     const tokens = new Scanner(source).scanTokens();
     const parser = new Parser(tokens);
 
-    return parser.parse()!;
+    return parser.parseExpression()!;
 }
 
 describe("Interpreter", () => {

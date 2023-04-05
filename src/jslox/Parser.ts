@@ -1,5 +1,5 @@
 import { ErrorReporter, defaultErrorReporter } from "./Error";
-import { Binary, Expr, Grouping, Literal, Unary } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Print, Stmt, Unary } from "./Expr";
 import { Token, TokenType } from "./Token";
 
 export class ParseError extends Error {
@@ -18,7 +18,26 @@ export class Parser {
         private readonly errorReporter: ErrorReporter = defaultErrorReporter
     ) {}
 
-    parse(): Expr | null {
+    parse(): Array<Stmt> | null {
+        try {
+            this.advance();
+            //return this.expression();
+
+            const statements: Array<Stmt> = [];
+            while (!this.isAtEnd) {
+                statements.push(this.statement());
+            }
+            return statements;
+        } catch (e) {
+            if (e instanceof ParseError) {
+                return null;
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    parseExpression(): Expr | null {
         try {
             this.advance();
             return this.expression();
@@ -29,6 +48,26 @@ export class Parser {
                 throw e;
             }
         }
+    }
+
+    private statement(): Stmt {
+        if (this.match("PRINT")) {
+            return this.printStatement();
+        }
+
+        return this.expressionStatement();
+    }
+
+    private printStatement(): Stmt {
+        const value = this.expression();
+        this.consume("SEMICOLON", "Expect ';' after value.");
+        return new Print(value);
+    }
+
+    private expressionStatement(): Stmt {
+        const expr = this.expression();
+        this.consume("SEMICOLON", "Expect ';' after expression.");
+        return expr;
     }
 
     private expression(): Expr {
@@ -158,7 +197,7 @@ export class Parser {
         this.previous = this.current;
         const next = this.tokens.next();
         this.current = next.value;
-        if (next.done) {
+        if (next.done || next.value.type === "EOF") {
             this.isAtEnd = true;
         }
 

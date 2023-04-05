@@ -14,7 +14,7 @@ describe("Parser", () => {
                 assert.fail(error.message);
             },
         });
-        const program = parser.parse();
+        const program = parser.parseExpression();
 
         assert.ok(program !== null);
         const pretty = program.visit(new PrettyPrinter());
@@ -31,11 +31,28 @@ describe("Parser", () => {
                 assert.fail(error.message);
             },
         });
-        const program = parser.parse();
+        const program = parser.parseExpression();
 
         assert.ok(program !== null);
         const pretty = program.visit(new PrettyPrinter());
 
         assert.equal(pretty, "(- ((+ 1 (* 2 6))) 13)");
+    });
+
+    it("should be able to parse multiple statement expressions", () => {
+        const parser = new Parser(new Scanner("1 + 2; 3 * 4;").scanTokens(), {
+            error: (line: number, message: string) => {
+                assert.fail(`[line ${line}] Error: ${message}`);
+            },
+            runtimeError: (error: RuntimeError) => {
+                assert.fail(error.message);
+            },
+        });
+        const program = parser.parse();
+
+        assert.ok(program !== null);
+        const pretty = program.map((stmt) => stmt.visit(new PrettyPrinter()));
+
+        assert.deepEqual(pretty, ["(+ 1 2)", "(* 3 4)"]);
     });
 });

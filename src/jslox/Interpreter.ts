@@ -1,5 +1,6 @@
+import { stringify } from "node:querystring";
 import { RuntimeError, defaultErrorReporter } from "./Error";
-import { Binary, Expr, Grouping, Literal, Unary, Visitor } from "./Expr";
+import { Binary, Expr, Expression, Grouping, Literal, Print, Stmt, Unary, Visitor } from "./Expr";
 import { Token } from "./Token";
 
 export type LoxType = null | number | string | boolean;
@@ -9,7 +10,7 @@ export class Interpreter implements Visitor<LoxType> {
 
     interpret(expr: Expr): LoxType {
         try {
-            return expr.visit(this);
+            return this.stringify(expr.visit(this));
         } catch (e) {
             if (e instanceof RuntimeError) {
                 this.errorReporter.runtimeError(e);
@@ -18,6 +19,37 @@ export class Interpreter implements Visitor<LoxType> {
                 throw e;
             }
         }
+    }
+
+    evaluate(stmt: Array<Stmt>): void {
+        try {
+            for (const statement of stmt) {
+                statement.visit(this);
+            }
+        } catch (e) {
+            if (e instanceof RuntimeError) {
+                this.errorReporter.runtimeError(e);
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    stringify(value: LoxType): string {
+        if (value === null) {
+            return "nil";
+        } else {
+            return value.toString();
+        }
+    }
+
+    visitExpression(expression: Expression): LoxType {
+        return null;
+    }
+
+    visitPrint(print: Print): LoxType {
+        console.log(this.stringify(print.expression.visit(this)));
+        return null;
     }
 
     visitBinary(binary: Binary): LoxType {
