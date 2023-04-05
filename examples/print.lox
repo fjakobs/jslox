@@ -1,0 +1,4 @@
+print 1;
+print "Hello";
+print true;
+print nil;

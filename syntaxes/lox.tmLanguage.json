@@ -1,0 +1,50 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Lox",
+    "scopeName": "source.lox",
+    "patterns": [
+        {
+            "include": "#keywords"
+        },
+        {
+            "include": "#strings"
+        }
+    ],
+    "repository": {
+        "keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.lox",
+                    "match": "\\b(else|for|if|while)\\b"
+                },
+                {
+                    "name": "keyword.operator.lox",
+                    "match": "\\b(and|or|\\!)\\b"
+                },
+                {
+                    "name": "constant.language.lox",
+                    "match": "\\b(true|false|nil)\\b"
+                },
+                {
+                    "match": "(?<![\\w\\d.])\\.\\d+",
+                    "name": "constant.numeric.lua"
+                },
+                {
+                    "name": "keyword.other.lox",
+                    "match": "\\b(class|fun|print|return|super|this|var)\\b"
+                }
+            ]
+        },
+        "strings": {
+            "name": "string.quoted.double.lox",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                {
+                    "name": "constant.character.escape.lox",
+                    "match": "\\\\."
+                }
+            ]
+        }
+    }
+}
