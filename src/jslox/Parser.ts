@@ -49,7 +49,12 @@ export class Parser {
     parseExpression(): Expr | null {
         try {
             this.advance();
-            return this.expression();
+            const expr = this.expression();
+            if (this.isAtEnd) {
+                return expr;
+            }
+
+            return null;
         } catch (e) {
             if (e instanceof ParseError) {
                 return null;

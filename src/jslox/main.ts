@@ -21,12 +21,17 @@ export async function runPrompt() {
         const replServer = repl.start({
             prompt: "jslox> ",
             eval: (cmd, context, filename, callback) => {
-                lox.run(cmd)
-                    .then((result) => {
-                        lox.hadError = false;
-                        callback(null, result);
-                    })
-                    .catch((err) => callback(err, null));
+                if (lox.isExpression(cmd)) {
+                    const result = lox.evaluateExpression(cmd);
+                    lox.hadError = false;
+                    lox.hadRuntimeError = false;
+                    callback(null, result);
+                } else {
+                    lox.run(cmd);
+                    lox.hadError = false;
+                    lox.hadRuntimeError = false;
+                    callback(null, null);
+                }
             },
         });
 

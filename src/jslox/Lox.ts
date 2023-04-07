@@ -1,7 +1,6 @@
-import { RuntimeError } from "./Error";
+import { RuntimeError, silentErrorReporter } from "./Error";
 import { Interpreter } from "./Interpreter";
 import { Parser } from "./Parser";
-import { PrettyPrinter } from "./PrettyPrinter";
 import { Scanner } from "./Scanner";
 
 export class Lox {
@@ -28,7 +27,36 @@ export class Lox {
         this.hadRuntimeError = true;
     }
 
-    async run(source: string): Promise<any> {
+    isExpression(source: string): boolean {
+        try {
+            const tokens = new Scanner(source, silentErrorReporter).scanTokens();
+            const parser = new Parser(tokens, silentErrorReporter);
+
+            const expression = parser.parseExpression();
+
+            if (this.hadError || !expression) {
+                this.hadError = false;
+                return false;
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    evaluateExpression(source: string): any {
+        const tokens = new Scanner(source, this).scanTokens();
+        const parser = new Parser(tokens, this);
+
+        const expression = parser.parseExpression();
+        if (this.hadError || !expression) {
+            return;
+        }
+
+        return this.interpreter.interpret(expression);
+    }
+
+    run(source: string): any {
         const tokens = new Scanner(source, this).scanTokens();
         const parser = new Parser(tokens, this);
 

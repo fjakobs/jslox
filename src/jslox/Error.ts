@@ -15,6 +15,12 @@ export const defaultErrorReporter: ErrorReporter = {
     },
 };
 
+export const silentErrorReporter: ErrorReporter = {
+    error: (line: number, message: string) => {},
+
+    runtimeError: function (error: RuntimeError): void {},
+};
+
 export class RuntimeError extends Error {
     constructor(readonly token: Token | undefined, message: string) {
         super(`[line ${token?.line || 0}] Error: ${message}`);
