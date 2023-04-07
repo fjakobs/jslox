@@ -15,6 +15,7 @@ export interface Visitor<R> {
     visitLiteral(literal: Literal): R;
     visitVariable(variable: Variable): R;
     visitUnary(unary: Unary): R;
+    visitBlock(block: Block): R;
     visitExpression(expression: Expression): R;
     visitPrint(print: Print): R;
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): R;
@@ -65,6 +66,14 @@ export class Unary implements Expr {
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitUnary(this);
+    }
+}
+
+export class Block implements Stmt {
+    constructor(readonly statements: Array<Stmt>) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitBlock(this);
     }
 }
 

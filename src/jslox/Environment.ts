@@ -5,7 +5,7 @@ import { Token } from "./Token";
 export class Environment {
     private readonly values: Map<string, LoxType> = new Map();
 
-    constructor() {}
+    constructor(readonly enclosing?: Environment) {}
 
     define(name: string, value: LoxType): void {
         this.values.set(name, value);
@@ -14,6 +14,10 @@ export class Environment {
     get(name: Token): LoxType {
         if (this.values.has(name.lexeme)) {
             return this.values.get(name.lexeme)!;
+        }
+
+        if (this.enclosing) {
+            return this.enclosing.get(name);
         }
 
         throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
@@ -25,11 +29,24 @@ export class Environment {
             return;
         }
 
+        if (this.enclosing) {
+            this.enclosing.assign(name, value);
+            return;
+        }
+
         throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
     }
 
     // mostly for testing
     getByName(name: string): LoxType {
-        return this.values.get(name)!;
+        if (this.values.has(name)) {
+            return this.values.get(name)!;
+        }
+
+        if (this.enclosing) {
+            return this.enclosing.getByName(name);
+        }
+
+        throw new Error(`Undefined variable '${name}'.`);
     }
 }

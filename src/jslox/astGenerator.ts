@@ -7,6 +7,7 @@ const grammar: Record<string, Array<string>> = {
     "Variable Expr": ["Token name"],
     "Unary Expr": ["Token operator", "Expr right"],
 
+    "Block Stmt": ["Array<Stmt> statements"],
     "Expression Stmt": ["Expr expression"],
     "Print Stmt": ["Expr expression"],
     "VariableDeclaration Stmt": ["Token name", "Expr initializer"],

@@ -1,5 +1,17 @@
 import { ErrorReporter, defaultErrorReporter } from "./Error";
-import { Assign, Binary, Expr, Grouping, Literal, Print, Stmt, Unary, Variable, VariableDeclaration } from "./Expr";
+import {
+    Assign,
+    Binary,
+    Block,
+    Expr,
+    Grouping,
+    Literal,
+    Print,
+    Stmt,
+    Unary,
+    Variable,
+    VariableDeclaration,
+} from "./Expr";
 import { Token, TokenType } from "./Token";
 
 export class ParseError extends Error {
@@ -79,9 +91,25 @@ export class Parser {
     private statement(): Stmt {
         if (this.match("PRINT")) {
             return this.printStatement();
+        } else if (this.match("LEFT_BRACE")) {
+            return new Block(this.block());
         }
 
         return this.expressionStatement();
+    }
+
+    private block(): Array<Stmt> {
+        const statements: Array<Stmt> = [];
+
+        while (!this.check("RIGHT_BRACE") && !this.isAtEnd) {
+            const declaration = this.declaration();
+            if (declaration) {
+                statements.push(declaration);
+            }
+        }
+
+        this.consume("RIGHT_BRACE", "Expect '}' after block.");
+        return statements;
     }
 
     private printStatement(): Stmt {

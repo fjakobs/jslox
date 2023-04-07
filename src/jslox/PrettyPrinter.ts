@@ -1,6 +1,7 @@
 import {
     Assign,
     Binary,
+    Block,
     Expression,
     Grouping,
     Literal,
@@ -22,6 +23,10 @@ export class PrettyPrinter implements Visitor<string> {
 
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): string {
         return `(var ${variabledeclaration.name.lexeme} ${variabledeclaration.initializer.visit(this)})`;
+    }
+
+    visitBlock(block: Block): string {
+        return `(block ${block.statements.map((statement) => statement.visit(this)).join(" ")})`;
     }
 
     visitExpression(expression: Expression): string {

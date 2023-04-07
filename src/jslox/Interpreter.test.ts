@@ -11,7 +11,7 @@ function parseExpression(source: string): Expr {
     return parser.parseExpression()!;
 }
 
-function parseStatement(source: string): Array<Stmt> {
+function parseStatements(source: string): Array<Stmt> {
     const tokens = new Scanner(source).scanTokens();
     const parser = new Parser(tokens);
 
@@ -67,15 +67,22 @@ describe("Interpreter", () => {
 
     it("should define variables", () => {
         const interpreter = new Interpreter();
-        interpreter.evaluate(parseStatement("var a = 1+1;"));
+        interpreter.evaluate(parseStatements("var a = 1+1;"));
 
         assert.equal(interpreter.environment.getByName("a"), 2);
     });
 
     it("should assign variables", () => {
         const interpreter = new Interpreter();
-        interpreter.evaluate(parseStatement("var a; a = 1+1;"));
+        interpreter.evaluate(parseStatements("var a; a = 1+1;"));
 
         assert.equal(interpreter.environment.getByName("a"), 2);
+    });
+
+    it("should have block scoped variables", () => {
+        const interpreter = new Interpreter();
+        interpreter.evaluate(parseStatements("var a = 1; { var a = 2; }"));
+
+        assert.equal(interpreter.environment.getByName("a"), 1);
     });
 });

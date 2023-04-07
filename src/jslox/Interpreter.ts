@@ -3,6 +3,7 @@ import { RuntimeError, defaultErrorReporter } from "./Error";
 import {
     Assign,
     Binary,
+    Block,
     Expr,
     Expression,
     Grouping,
@@ -19,9 +20,13 @@ import { Token } from "./Token";
 export type LoxType = null | number | string | boolean;
 
 export class Interpreter implements Visitor<LoxType> {
-    readonly environment = new Environment();
+    private _environment = new Environment();
 
     constructor(private readonly errorReporter = defaultErrorReporter) {}
+
+    get environment() {
+        return this._environment;
+    }
 
     interpret(expr: Expr): LoxType {
         try {
@@ -60,20 +65,25 @@ export class Interpreter implements Visitor<LoxType> {
 
     visitAssign(assign: Assign): LoxType {
         const value = assign.value.visit(this);
-        this.environment.assign(assign.name, value);
+        this._environment.assign(assign.name, value);
         return value;
     }
 
     visitVariable(variable: Variable): LoxType {
-        return this.environment.get(variable.name);
+        return this._environment.get(variable.name);
     }
 
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): LoxType {
-        this.environment.define(variabledeclaration.name.lexeme, variabledeclaration.initializer.visit(this));
+        this._environment.define(variabledeclaration.name.lexeme, variabledeclaration.initializer.visit(this));
         return null;
     }
 
     visitExpression(expression: Expression): LoxType {
+        return null;
+    }
+
+    visitBlock(block: Block): LoxType {
+        this.executeBlock(block.statements, new Environment(this._environment));
         return null;
     }
 
@@ -165,6 +175,18 @@ export class Interpreter implements Visitor<LoxType> {
 
             default:
                 throw new Error("Unknown unary operator.");
+        }
+    }
+
+    private executeBlock(statements: Array<Stmt>, environment: Environment): void {
+        const previous = this._environment;
+        try {
+            this._environment = environment;
+            for (const statement of statements) {
+                statement.visit(this);
+            }
+        } finally {
+            this._environment = previous;
         }
     }
 
