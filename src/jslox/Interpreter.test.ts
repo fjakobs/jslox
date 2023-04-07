@@ -71,4 +71,11 @@ describe("Interpreter", () => {
 
         assert.equal(interpreter.environment.getByName("a"), 2);
     });
+
+    it("should assign variables", () => {
+        const interpreter = new Interpreter();
+        interpreter.evaluate(parseStatement("var a; a = 1+1;"));
+
+        assert.equal(interpreter.environment.getByName("a"), 2);
+    });
 });

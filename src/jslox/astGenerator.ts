@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 const grammar: Record<string, Array<string>> = {
+    "Assign Expr": ["Token name", "Expr value"],
     "Binary Expr": ["Expr left", "Token operator", "Expr right"],
     "Grouping Expr": ["Expr expression"],
     "Literal Expr": ["string|number|null|boolean value"],

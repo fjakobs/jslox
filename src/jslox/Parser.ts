@@ -1,5 +1,5 @@
 import { ErrorReporter, defaultErrorReporter } from "./Error";
-import { Binary, Expr, Grouping, Literal, Print, Stmt, Unary, Variable, VariableDeclaration } from "./Expr";
+import { Assign, Binary, Expr, Grouping, Literal, Print, Stmt, Unary, Variable, VariableDeclaration } from "./Expr";
 import { Token, TokenType } from "./Token";
 
 export class ParseError extends Error {
@@ -97,7 +97,25 @@ export class Parser {
     }
 
     private expression(): Expr {
-        return this.equality();
+        return this.assignment();
+    }
+
+    private assignment(): Expr {
+        const expr = this.equality();
+
+        if (this.match("EQUAL")) {
+            const equals = this.previous;
+            const value = this.assignment();
+
+            if (expr instanceof Variable) {
+                const name = expr.name;
+                return new Assign(name, value);
+            }
+
+            this.error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     private equality(): Expr {
@@ -185,7 +203,7 @@ export class Parser {
             return new Grouping(expr);
         }
 
-        this.error(this.current!, "Expect expression.");
+        throw this.error(this.current!, "Expect expression.");
     }
 
     private synchronize(): void {
@@ -247,11 +265,11 @@ export class Parser {
             return this.advance();
         }
 
-        this.error(this.current!, message);
+        throw this.error(this.current!, message);
     }
 
-    private error(token: Token | undefined, message: string): never {
+    private error(token: Token | undefined, message: string): ParseError {
         this.errorReporter.error(token?.line || 0, message);
-        throw new ParseError(token, message);
+        return new ParseError(token, message);
     }
 }

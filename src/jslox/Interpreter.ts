@@ -1,6 +1,7 @@
 import { Environment } from "./Environment";
 import { RuntimeError, defaultErrorReporter } from "./Error";
 import {
+    Assign,
     Binary,
     Expr,
     Expression,
@@ -55,6 +56,12 @@ export class Interpreter implements Visitor<LoxType> {
         } else {
             return value.toString();
         }
+    }
+
+    visitAssign(assign: Assign): LoxType {
+        const value = assign.value.visit(this);
+        this.environment.assign(assign.name, value);
+        return value;
     }
 
     visitVariable(variable: Variable): LoxType {

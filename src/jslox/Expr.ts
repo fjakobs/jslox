@@ -9,6 +9,7 @@ export interface Stmt {
 }
 
 export interface Visitor<R> {
+    visitAssign(assign: Assign): R;
     visitBinary(binary: Binary): R;
     visitGrouping(grouping: Grouping): R;
     visitLiteral(literal: Literal): R;
@@ -17,6 +18,14 @@ export interface Visitor<R> {
     visitExpression(expression: Expression): R;
     visitPrint(print: Print): R;
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): R;
+}
+
+export class Assign implements Expr {
+    constructor(readonly name: Token, readonly value: Expr) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitAssign(this);
+    }
 }
 
 export class Binary implements Expr {
