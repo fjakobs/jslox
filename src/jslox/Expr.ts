@@ -13,11 +13,15 @@ export interface Visitor<R> {
     visitBinary(binary: Binary): R;
     visitGrouping(grouping: Grouping): R;
     visitLiteral(literal: Literal): R;
+    visitLogical(logical: Logical): R;
     visitVariable(variable: Variable): R;
     visitUnary(unary: Unary): R;
-    visitBlock(block: Block): R;
     visitExpression(expression: Expression): R;
+    visitIfStmt(ifstmt: IfStmt): R;
+    visitBlock(block: Block): R;
     visitPrint(print: Print): R;
+    visitWhileStmt(whilestmt: WhileStmt): R;
+    visitForStmt(forstmt: ForStmt): R;
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): R;
 }
 
@@ -46,10 +50,18 @@ export class Grouping implements Expr {
 }
 
 export class Literal implements Expr {
-    constructor(readonly value: string|number|null|boolean) {}
+    constructor(readonly value: string | number | null | boolean) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitLiteral(this);
+    }
+}
+
+export class Logical implements Expr {
+    constructor(readonly left: Expr, readonly operator: Token, readonly right: Expr) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitLogical(this);
     }
 }
 
@@ -69,19 +81,27 @@ export class Unary implements Expr {
     }
 }
 
-export class Block implements Stmt {
-    constructor(readonly statements: Array<Stmt>) {}
-
-    visit<R>(visitor: Visitor<R>): R {
-        return visitor.visitBlock(this);
-    }
-}
-
 export class Expression implements Stmt {
     constructor(readonly expression: Expr) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitExpression(this);
+    }
+}
+
+export class IfStmt implements Stmt {
+    constructor(readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch: Stmt) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitIfStmt(this);
+    }
+}
+
+export class Block implements Stmt {
+    constructor(readonly statements: Array<Stmt>) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitBlock(this);
     }
 }
 
@@ -93,6 +113,27 @@ export class Print implements Stmt {
     }
 }
 
+export class WhileStmt implements Stmt {
+    constructor(readonly condition: Expr, readonly body: Stmt) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitWhileStmt(this);
+    }
+}
+
+export class ForStmt implements Stmt {
+    constructor(
+        readonly initializer: Stmt | null,
+        readonly condition: Expr | null,
+        readonly increment: Expr | null,
+        readonly body: Stmt
+    ) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitForStmt(this);
+    }
+}
+
 export class VariableDeclaration implements Stmt {
     constructor(readonly name: Token, readonly initializer: Expr) {}
 
@@ -100,5 +141,3 @@ export class VariableDeclaration implements Stmt {
         return visitor.visitVariableDeclaration(this);
     }
 }
-
-

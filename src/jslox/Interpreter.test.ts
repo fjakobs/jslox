@@ -105,4 +105,43 @@ describe("Interpreter", () => {
 
         assert.equal(interpreter.environment.getByName("a"), 1);
     });
+
+    it("should support if statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("var a = 1; if (true) a=2;"));
+        assert.equal(interpreter.environment.getByName("a"), 2);
+
+        interpreter.evaluate(parseStatements("var a = 1; if (false) a=2; else a=3;"));
+        assert.equal(interpreter.environment.getByName("a"), 3);
+    });
+
+    it("should support logical AND and OR statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("var a = true and 12;"));
+        assert.equal(interpreter.environment.getByName("a"), 12);
+
+        interpreter.evaluate(parseStatements("var a = false and 12;"));
+        assert.equal(interpreter.environment.getByName("a"), false);
+
+        interpreter.evaluate(parseStatements("var a = true or 12;"));
+        assert.equal(interpreter.environment.getByName("a"), true);
+
+        interpreter.evaluate(parseStatements("var a = false or 12;"));
+        assert.equal(interpreter.environment.getByName("a"), 12);
+
+        interpreter.evaluate(parseStatements("var a = false and nil;"));
+        assert.equal(interpreter.environment.getByName("a"), false);
+    });
+
+    it("should support while statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("var a = 0; while (a < 10) { a = a + 1; }"));
+        assert.equal(interpreter.environment.getByName("a"), 10);
+    });
+
+    it("should support for statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("var a = 0; for (var i = 0; i < 10; i = i + 1) { a = a + 1; }"));
+        assert.equal(interpreter.environment.getByName("a"), 10);
+    });
 });

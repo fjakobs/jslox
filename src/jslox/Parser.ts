@@ -4,13 +4,17 @@ import {
     Binary,
     Block,
     Expr,
+    ForStmt,
     Grouping,
+    IfStmt,
     Literal,
+    Logical,
     Print,
     Stmt,
     Unary,
     Variable,
     VariableDeclaration,
+    WhileStmt,
 } from "./Expr";
 import { Token, TokenType } from "./Token";
 
@@ -98,9 +102,68 @@ export class Parser {
             return this.printStatement();
         } else if (this.match("LEFT_BRACE")) {
             return new Block(this.block());
+        } else if (this.match("IF")) {
+            return this.ifStatement();
+        } else if (this.match("WHILE")) {
+            return this.whileStatement();
+        } else if (this.match("FOR")) {
+            return this.forStatement();
         }
 
         return this.expressionStatement();
+    }
+
+    private ifStatement(): Stmt {
+        this.consume("LEFT_PAREN", "Expect '(' after 'if'.");
+        const condition = this.expression();
+        this.consume("RIGHT_PAREN", "Expect ')' after if condition.");
+
+        const thenBranch = this.statement();
+        let elseBranch: Stmt | undefined;
+
+        if (this.match("ELSE")) {
+            elseBranch = this.statement();
+        }
+
+        return new IfStmt(condition, thenBranch, elseBranch || new Block([]));
+    }
+
+    private whileStatement(): Stmt {
+        this.consume("LEFT_PAREN", "Expect '(' after 'while'.");
+        const condition = this.expression();
+        this.consume("RIGHT_PAREN", "Expect ')' after while condition.");
+
+        const body = this.statement();
+
+        return new WhileStmt(condition, body);
+    }
+
+    private forStatement(): Stmt {
+        this.consume("LEFT_PAREN", "Expect '(' after 'for'.");
+        let initializer: Stmt | null = null;
+        if (this.match("SEMICOLON")) {
+            initializer = null;
+        } else if (this.match("VAR")) {
+            initializer = this.varDeclaration();
+        } else {
+            initializer = this.expressionStatement();
+        }
+
+        let condition: Expr | null = null;
+        if (!this.check("SEMICOLON")) {
+            condition = this.expression();
+        }
+        this.consume("SEMICOLON", "Expect ';' after loop condition.");
+
+        let increment: Expr | null = null;
+        if (!this.check("RIGHT_PAREN")) {
+            increment = this.expression();
+        }
+        this.consume("RIGHT_PAREN", "Expect ')' after for clauses.");
+
+        let body = this.statement();
+
+        return new ForStmt(initializer, condition, increment, body);
     }
 
     private block(): Array<Stmt> {
@@ -134,7 +197,7 @@ export class Parser {
     }
 
     private assignment(): Expr {
-        const expr = this.equality();
+        const expr = this.or();
 
         if (this.match("EQUAL")) {
             const equals = this.previous;
@@ -146,6 +209,30 @@ export class Parser {
             }
 
             this.error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    private or(): Expr {
+        let expr = this.and();
+
+        while (this.match("OR")) {
+            const operator = this.previous;
+            const right = this.and();
+            expr = new Logical(expr, operator!, right);
+        }
+
+        return expr;
+    }
+
+    private and(): Expr {
+        let expr = this.equality();
+
+        while (this.match("AND")) {
+            const operator = this.previous;
+            const right = this.equality();
+            expr = new Logical(expr, operator!, right);
         }
 
         return expr;

@@ -4,12 +4,16 @@ const grammar: Record<string, Array<string>> = {
     "Binary Expr": ["Expr left", "Token operator", "Expr right"],
     "Grouping Expr": ["Expr expression"],
     "Literal Expr": ["string|number|null|boolean value"],
+    "Logical Expr": ["Expr left", "Token operator", "Expr right"],
     "Variable Expr": ["Token name"],
     "Unary Expr": ["Token operator", "Expr right"],
 
-    "Block Stmt": ["Array<Stmt> statements"],
     "Expression Stmt": ["Expr expression"],
+    "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt elseBranch"],
+    "Block Stmt": ["Array<Stmt> statements"],
     "Print Stmt": ["Expr expression"],
+    "WhileStmt Stmt": ["Expr condition", "Stmt body"],
+    "ForStmt Stmt": ["Stmt|null initializer", "Expr|null condition", "Expr|null increment", "Stmt body"],
     "VariableDeclaration Stmt": ["Token name", "Expr initializer"],
 };
 

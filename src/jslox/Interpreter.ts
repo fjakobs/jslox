@@ -6,14 +6,18 @@ import {
     Block,
     Expr,
     Expression,
+    ForStmt,
     Grouping,
+    IfStmt,
     Literal,
+    Logical,
     Print,
     Stmt,
     Unary,
     Variable,
     VariableDeclaration,
     Visitor,
+    WhileStmt,
 } from "./Expr";
 import { Token } from "./Token";
 
@@ -61,6 +65,59 @@ export class Interpreter implements Visitor<LoxType> {
         } else {
             return value.toString();
         }
+    }
+
+    visitIfStmt(branch: IfStmt): LoxType {
+        if (this.isTruthy(branch.condition.visit(this))) {
+            branch.thenBranch.visit(this);
+        } else {
+            branch.elseBranch.visit(this);
+        }
+        return null;
+    }
+
+    visitWhileStmt(whilestmt: WhileStmt): LoxType {
+        while (this.isTruthy(whilestmt.condition.visit(this))) {
+            whilestmt.body.visit(this);
+        }
+
+        return null;
+    }
+
+    visitForStmt(forstmt: ForStmt): LoxType {
+        const oldEnvironment = this._environment;
+        this._environment = new Environment(this._environment);
+
+        try {
+            forstmt.initializer?.visit(this);
+
+            const condition = forstmt.condition || new Literal(true);
+
+            while (this.isTruthy(condition.visit(this))) {
+                forstmt.body.visit(this);
+                forstmt.increment?.visit(this);
+            }
+        } finally {
+            this._environment = oldEnvironment;
+        }
+
+        return null;
+    }
+
+    visitLogical(logical: Logical): LoxType {
+        const left = logical.left.visit(this);
+
+        if (logical.operator.type === "OR") {
+            if (this.isTruthy(left)) {
+                return left;
+            }
+        } else {
+            if (!this.isTruthy(left)) {
+                return left;
+            }
+        }
+
+        return logical.right.visit(this);
     }
 
     visitAssign(assign: Assign): LoxType {
