@@ -13,7 +13,7 @@ export class Lox {
         this.interpreter = new Interpreter(this);
     }
 
-    error(line: number, message: string) {
+    error(line: number, start: number, end: number, message: string) {
         this.report(line, "", message);
     }
 

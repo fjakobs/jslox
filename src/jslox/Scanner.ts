@@ -35,7 +35,7 @@ export class Scanner {
             yield* this.scanToken();
         }
 
-        yield new Token("EOF", "", undefined, this.line);
+        yield new Token("EOF", "", undefined, this.line, this.start, this.current);
     }
 
     private isAtEnd(): boolean {
@@ -116,7 +116,7 @@ export class Scanner {
                 } else if (this.isAlpha(c)) {
                     yield* this.identifier();
                 } else {
-                    this.errorReporter.error(this.line, "Unexpected character.");
+                    this.errorReporter.error(this.line, this.current, this.current, "Unexpected character.");
                 }
                 break;
         }
@@ -178,7 +178,7 @@ export class Scanner {
         }
 
         if (this.isAtEnd()) {
-            this.errorReporter.error(this.line, "Unterminated string.");
+            this.errorReporter.error(this.line, this.current, this.current, "Unterminated string.");
             return;
         }
 
@@ -216,6 +216,6 @@ export class Scanner {
 
     private makeToken(type: TokenType, literal?: string | number | boolean): Token {
         const text = this.source.substring(this.start, this.current);
-        return new Token(type, text, literal, this.line);
+        return new Token(type, text, literal, this.line, this.start, this.current);
     }
 }

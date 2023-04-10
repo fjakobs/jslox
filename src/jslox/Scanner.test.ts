@@ -53,7 +53,7 @@ describe("Scanner", () => {
     it("should give an error for unterminated strings", () => {
         let called = false;
         const scanner = new Scanner(`"hello`, {
-            error: (line: number, message: string) => {
+            error: (line: number, start: number, end: number, message: string) => {
                 assert.equal(line, 1);
                 assert.equal(message, "Unterminated string.");
                 called = true;

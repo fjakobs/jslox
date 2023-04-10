@@ -397,7 +397,7 @@ export class Parser {
     }
 
     private error(token: Token | undefined, message: string): ParseError {
-        this.errorReporter.error(token?.line || 0, message);
+        this.errorReporter.error(token?.line || 0, token?.start || 0, token?.end || 0, message);
         return new ParseError(token, message);
     }
 }

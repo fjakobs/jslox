@@ -7,7 +7,7 @@ import { RuntimeError } from "./Error";
 describe("Parser", () => {
     it("should be able to parse a single expression", () => {
         const parser = new Parser(new Scanner("1 + 2").scanTokens(), {
-            error: (line: number, message: string) => {
+            error: (line: number, start: number, end: number, message: string) => {
                 assert.fail(`[line ${line}] Error: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
@@ -24,7 +24,7 @@ describe("Parser", () => {
 
     it("should be able to parse a single expression with grouping", () => {
         const parser = new Parser(new Scanner("(1 + 2 * 6) - 13").scanTokens(), {
-            error: (line: number, message: string) => {
+            error: (line: number, start: number, end: number, message: string) => {
                 assert.fail(`[line ${line}] Error: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
@@ -41,7 +41,7 @@ describe("Parser", () => {
 
     it("should be able to parse multiple statement expressions", () => {
         const parser = new Parser(new Scanner("1 + 2; 3 * 4;").scanTokens(), {
-            error: (line: number, message: string) => {
+            error: (line: number, start: number, end: number, message: string) => {
                 assert.fail(`[line ${line}] Error: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
@@ -58,7 +58,7 @@ describe("Parser", () => {
 
     it("should parse variable declarations", () => {
         const parser = new Parser(new Scanner("var a = 1; print a;").scanTokens(), {
-            error: (line: number, message: string) => {
+            error: (line: number, start: number, end: number, message: string) => {
                 assert.fail(`[line ${line}] Error: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {

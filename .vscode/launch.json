@@ -6,6 +6,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach to LSP",
+            "port": 6009,
+            "request": "attach",
+            "skipFiles": ["<node_internals>/**"],
+            "type": "node"
+        },
+        {
             "type": "node",
             "request": "launch",
             "name": "Lox",

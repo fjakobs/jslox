@@ -6,7 +6,7 @@ import { Expr, Stmt } from "./Expr";
 import { ErrorReporter, RuntimeError } from "./Error";
 
 export const testErrorReporter: ErrorReporter = {
-    error: (line: number, message: string) => {
+    error: (line: number, start: number, end: number, message: string) => {
         console.error(`[line ${line}] Error: ${message}`);
         assert.fail(message);
     },
@@ -53,7 +53,7 @@ describe("Interpreter", () => {
     it("should report runtime errors", () => {
         let called = false;
         const errorReporter = {
-            error: (line: number, message: string) => {},
+            error: (line: number, start: number, end: number, message: string) => {},
             runtimeError: () => {
                 called = true;
             },
@@ -67,7 +67,7 @@ describe("Interpreter", () => {
     it("should report runtime errors for division by zero", () => {
         let called = false;
         const errorReporter = {
-            error: (line: number, message: string) => {},
+            error: (line: number, start: number, end: number, message: string) => {},
             runtimeError: () => {
                 called = true;
             },

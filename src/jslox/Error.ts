@@ -1,12 +1,12 @@
 import { Token } from "./Token";
 
 export interface ErrorReporter {
-    error(line: number, message: string): void;
+    error(line: number, start: number, end: number, message: string): void;
     runtimeError(error: RuntimeError): void;
 }
 
 export const defaultErrorReporter: ErrorReporter = {
-    error: (line: number, message: string) => {
+    error: (line: number, start: number, end: number, message: string) => {
         console.error(`[line ${line}] Error: ${message}`);
     },
 
@@ -16,8 +16,7 @@ export const defaultErrorReporter: ErrorReporter = {
 };
 
 export const silentErrorReporter: ErrorReporter = {
-    error: (line: number, message: string) => {},
-
+    error: (line: number, start: number, end: number, message: string) => {},
     runtimeError: function (error: RuntimeError): void {},
 };
 
