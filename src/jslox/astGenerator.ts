@@ -9,9 +9,11 @@ const grammar: Record<string, Array<string>> = {
     "Unary Expr": ["Token operator", "Expr right"],
 
     "Expression Stmt": ["Expr expression"],
+    "BreakStmt Stmt": [],
+    "ContinueStmt Stmt": [],
     "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt elseBranch"],
     "Block Stmt": ["Array<Stmt> statements"],
-    "Print Stmt": ["Expr expression"],
+    "PrintStmt Stmt": ["Expr expression"],
     "WhileStmt Stmt": ["Expr condition", "Stmt body"],
     "ForStmt Stmt": ["Stmt|null initializer", "Expr|null condition", "Expr|null increment", "Stmt body"],
     "VariableDeclaration Stmt": ["Token name", "Expr initializer"],

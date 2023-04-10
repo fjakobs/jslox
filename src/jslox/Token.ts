@@ -46,7 +46,9 @@ export type TokenType =
     | "TRUE"
     | "VAR"
     | "WHILE"
-    | "EOF";
+    | "EOF"
+    | "BREAK"
+    | "CONTINUE";
 
 export class Token {
     constructor(

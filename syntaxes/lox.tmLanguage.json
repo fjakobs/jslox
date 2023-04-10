@@ -31,7 +31,7 @@
                 },
                 {
                     "name": "keyword.other.lox",
-                    "match": "\\b(class|fun|print|return|super|this|var)\\b"
+                    "match": "\\b(class|fun|print|return|super|this|var|break|continue)\\b"
                 }
             ]
         },

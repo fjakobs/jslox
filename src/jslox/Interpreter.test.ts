@@ -144,4 +144,18 @@ describe("Interpreter", () => {
         interpreter.evaluate(parseStatements("var a = 0; for (var i = 0; i < 10; i = i + 1) { a = a + 1; }"));
         assert.equal(interpreter.environment.getByName("a"), 10);
     });
+
+    it("should suoport break statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("var a = 0; while (true) { a = a + 1; break; }"));
+        assert.equal(interpreter.environment.getByName("a"), 1);
+    });
+
+    it("should support continue statements", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(
+            parseStatements("var a = 0; for (var i = 0; i < 10; i = i + 1) { if (i == 5) continue; a = a + 1; }")
+        );
+        assert.equal(interpreter.environment.getByName("a"), 9);
+    });
 });

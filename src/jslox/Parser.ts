@@ -3,13 +3,15 @@ import {
     Assign,
     Binary,
     Block,
+    BreakStmt,
+    ContinueStmt,
     Expr,
     ForStmt,
     Grouping,
     IfStmt,
     Literal,
     Logical,
-    Print,
+    PrintStmt,
     Stmt,
     Unary,
     Variable,
@@ -108,6 +110,12 @@ export class Parser {
             return this.whileStatement();
         } else if (this.match("FOR")) {
             return this.forStatement();
+        } else if (this.match("BREAK")) {
+            this.consume("SEMICOLON", "Expect ';' after 'break'.");
+            return new BreakStmt();
+        } else if (this.match("CONTINUE")) {
+            this.consume("SEMICOLON", "Expect ';' after 'continue'.");
+            return new ContinueStmt();
         }
 
         return this.expressionStatement();
@@ -183,7 +191,7 @@ export class Parser {
     private printStatement(): Stmt {
         const value = this.expression();
         this.consume("SEMICOLON", "Expect ';' after value.");
-        return new Print(value);
+        return new PrintStmt(value);
     }
 
     private expressionStatement(): Stmt {

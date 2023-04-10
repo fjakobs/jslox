@@ -17,9 +17,11 @@ export interface Visitor<R> {
     visitVariable(variable: Variable): R;
     visitUnary(unary: Unary): R;
     visitExpression(expression: Expression): R;
+    visitBreakStmt(breakstmt: BreakStmt): R;
+    visitContinueStmt(continuestmt: ContinueStmt): R;
     visitIfStmt(ifstmt: IfStmt): R;
     visitBlock(block: Block): R;
-    visitPrint(print: Print): R;
+    visitPrint(print: PrintStmt): R;
     visitWhileStmt(whilestmt: WhileStmt): R;
     visitForStmt(forstmt: ForStmt): R;
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): R;
@@ -89,6 +91,22 @@ export class Expression implements Stmt {
     }
 }
 
+export class BreakStmt implements Stmt {
+    constructor() {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitBreakStmt(this);
+    }
+}
+
+export class ContinueStmt implements Stmt {
+    constructor() {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitContinueStmt(this);
+    }
+}
+
 export class IfStmt implements Stmt {
     constructor(readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch: Stmt) {}
 
@@ -105,7 +123,7 @@ export class Block implements Stmt {
     }
 }
 
-export class Print implements Stmt {
+export class PrintStmt implements Stmt {
     constructor(readonly expression: Expr) {}
 
     visit<R>(visitor: Visitor<R>): R {

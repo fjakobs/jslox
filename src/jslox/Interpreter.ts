@@ -4,6 +4,8 @@ import {
     Assign,
     Binary,
     Block,
+    BreakStmt,
+    ContinueStmt,
     Expr,
     Expression,
     ForStmt,
@@ -11,7 +13,7 @@ import {
     IfStmt,
     Literal,
     Logical,
-    Print,
+    PrintStmt,
     Stmt,
     Unary,
     Variable,
@@ -22,6 +24,9 @@ import {
 import { Token } from "./Token";
 
 export type LoxType = null | number | string | boolean;
+
+export class BreakException extends Error {}
+export class ContinueException extends Error {}
 
 export class Interpreter implements Visitor<LoxType> {
     private _environment = new Environment();
@@ -78,10 +83,30 @@ export class Interpreter implements Visitor<LoxType> {
 
     visitWhileStmt(whilestmt: WhileStmt): LoxType {
         while (this.isTruthy(whilestmt.condition.visit(this))) {
-            whilestmt.body.visit(this);
+            try {
+                whilestmt.body.visit(this);
+            } catch (e) {
+                if (e instanceof BreakException) {
+                    break;
+                } else if (e instanceof ContinueException) {
+                    continue;
+                } else {
+                    throw e;
+                }
+            }
         }
 
         return null;
+    }
+
+    visitForStmt2(forstmt: ForStmt): LoxType {
+        let body = new Block([forstmt.body, forstmt.increment || new Literal(null)]);
+        let outer = new Block([
+            forstmt.initializer || new Literal(null),
+            new WhileStmt(forstmt.condition || new Literal(true), body),
+        ]);
+
+        return outer.visit(this);
     }
 
     visitForStmt(forstmt: ForStmt): LoxType {
@@ -94,7 +119,17 @@ export class Interpreter implements Visitor<LoxType> {
             const condition = forstmt.condition || new Literal(true);
 
             while (this.isTruthy(condition.visit(this))) {
-                forstmt.body.visit(this);
+                try {
+                    forstmt.body.visit(this);
+                } catch (e) {
+                    if (e instanceof BreakException) {
+                        break;
+                    } else if (e instanceof ContinueException) {
+                        // consume exception and execute the increment
+                    } else {
+                        throw e;
+                    }
+                }
                 forstmt.increment?.visit(this);
             }
         } finally {
@@ -102,6 +137,14 @@ export class Interpreter implements Visitor<LoxType> {
         }
 
         return null;
+    }
+
+    visitBreakStmt(breakstmt: BreakStmt): LoxType {
+        throw new BreakException();
+    }
+
+    visitContinueStmt(continuestmt: ContinueStmt): LoxType {
+        throw new ContinueException();
     }
 
     visitLogical(logical: Logical): LoxType {
@@ -144,7 +187,7 @@ export class Interpreter implements Visitor<LoxType> {
         return null;
     }
 
-    visitPrint(print: Print): LoxType {
+    visitPrint(print: PrintStmt): LoxType {
         console.log(this.stringify(print.expression.visit(this)));
         return null;
     }

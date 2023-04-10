@@ -2,17 +2,49 @@ import {
     Assign,
     Binary,
     Block,
+    BreakStmt,
+    ContinueStmt,
     Expression,
+    ForStmt,
     Grouping,
+    IfStmt,
     Literal,
-    Print,
+    Logical,
+    PrintStmt,
     Unary,
     Variable,
     VariableDeclaration,
     Visitor,
+    WhileStmt,
 } from "./Expr";
 
 export class PrettyPrinter implements Visitor<string> {
+    visitLogical(logical: Logical): string {
+        return `(logical ${logical.operator.lexeme} ${logical.left.visit(this)} ${logical.right.visit(this)})`;
+    }
+
+    visitBreakStmt(breakstmt: BreakStmt): string {
+        return "(break)";
+    }
+
+    visitContinueStmt(continuestmt: ContinueStmt): string {
+        return "(continue)";
+    }
+
+    visitIfStmt(ifstmt: IfStmt): string {
+        return `(if ${ifstmt.condition.visit(this)} ${ifstmt.thenBranch.visit(this)} ${ifstmt.elseBranch.visit(this)})`;
+    }
+
+    visitWhileStmt(whilestmt: WhileStmt): string {
+        return `(while ${whilestmt.condition.visit(this)} ${whilestmt.body.visit(this)})`;
+    }
+
+    visitForStmt(forstmt: ForStmt): string {
+        return `(for ${forstmt.initializer?.visit(this)} ${forstmt.condition?.visit(this)} ${forstmt.increment?.visit(
+            this
+        )} ${forstmt.body.visit(this)})`;
+    }
+
     visitAssign(assign: Assign): string {
         return `(set ${assign.name.lexeme} ${assign.value.visit(this)})`;
     }
@@ -33,7 +65,7 @@ export class PrettyPrinter implements Visitor<string> {
         return expression.expression.visit(this);
     }
 
-    visitPrint(print: Print): string {
+    visitPrint(print: PrintStmt): string {
         return `(print ${print.expression.visit(this)})`;
     }
 

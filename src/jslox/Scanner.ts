@@ -18,6 +18,8 @@ const keywords: Record<string, TokenType> = {
     true: "TRUE",
     var: "VAR",
     while: "WHILE",
+    break: "BREAK", // non standard
+    continue: "CONTINUE", // non standard
 };
 
 export class Scanner {
