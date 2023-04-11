@@ -3,14 +3,17 @@ import {
     Binary,
     Block,
     BreakStmt,
+    Call,
     ContinueStmt,
     Expression,
     ForStmt,
+    FunctionStmt,
     Grouping,
     IfStmt,
     Literal,
     Logical,
     PrintStmt,
+    ReturnStmt,
     Unary,
     Variable,
     VariableDeclaration,
@@ -19,6 +22,10 @@ import {
 } from "./Expr";
 
 export class PrettyPrinter implements Visitor<string> {
+    visitReturnStmt(returnstmt: ReturnStmt): string {
+        return `(return ${returnstmt.value?.visit(this) || ""})`;
+    }
+
     visitLogical(logical: Logical): string {
         return `(logical ${logical.operator.lexeme} ${logical.left.visit(this)} ${logical.right.visit(this)})`;
     }
@@ -57,6 +64,16 @@ export class PrettyPrinter implements Visitor<string> {
         return `(var ${variabledeclaration.name.lexeme} ${variabledeclaration.initializer.visit(this)})`;
     }
 
+    visitFunctionStmt(functiondecl: FunctionStmt): string {
+        return `(fun ${functiondecl.name.lexeme} ${functiondecl.params
+            .map((param) => param.lexeme)
+            .join(" ")} (${functiondecl.body.map((statement) => statement.visit(this)).join(" ")})}))`;
+    }
+
+    visitCall(call: Call): string {
+        return `(call ${call.callee.visit(this)} ${call.args.map((arg) => arg.visit(this)).join(" ")})`;
+    }
+
     visitBlock(block: Block): string {
         return `(block ${block.statements.map((statement) => statement.visit(this)).join(" ")})`;
     }
@@ -65,7 +82,7 @@ export class PrettyPrinter implements Visitor<string> {
         return expression.expression.visit(this);
     }
 
-    visitPrint(print: PrintStmt): string {
+    visitPrintStmt(print: PrintStmt): string {
         return `(print ${print.expression.visit(this)})`;
     }
 

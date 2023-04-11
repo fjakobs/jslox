@@ -158,4 +158,24 @@ describe("Interpreter", () => {
         );
         assert.equal(interpreter.environment.getByName("a"), 9);
     });
+
+    it("should support functions", () => {
+        const interpreter = new Interpreter(testErrorReporter);
+        interpreter.evaluate(parseStatements("fun foo() { return 11; } var j = foo();"));
+        assert.equal(interpreter.environment.getByName("j"), 11);
+    });
+
+    it("should not call numbers", () => {
+        let called = false;
+        const errorReporter = {
+            error: (line: number, start: number, end: number, message: string) => {},
+            runtimeError: () => {
+                called = true;
+            },
+        };
+
+        const interpreter = new Interpreter(errorReporter);
+        interpreter.evaluate(parseStatements("var a = 1();"));
+        assert.ok(called);
+    });
 });

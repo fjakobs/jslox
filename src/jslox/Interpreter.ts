@@ -1,3 +1,5 @@
+import { Buildins } from "./Buildins";
+import { Callable, LoxFunction, ReturnException } from "./Callable";
 import { Environment } from "./Environment";
 import { RuntimeError, defaultErrorReporter } from "./Error";
 import {
@@ -5,15 +7,18 @@ import {
     Binary,
     Block,
     BreakStmt,
+    Call,
     ContinueStmt,
     Expr,
     Expression,
     ForStmt,
+    FunctionStmt,
     Grouping,
     IfStmt,
     Literal,
     Logical,
     PrintStmt,
+    ReturnStmt,
     Stmt,
     Unary,
     Variable,
@@ -23,15 +28,16 @@ import {
 } from "./Expr";
 import { Token } from "./Token";
 
-export type LoxType = null | number | string | boolean;
+export type LoxType = null | number | string | boolean | Callable;
 
 export class BreakException extends Error {}
 export class ContinueException extends Error {}
 
 export class Interpreter implements Visitor<LoxType> {
-    private _environment = new Environment();
-
-    constructor(private readonly errorReporter = defaultErrorReporter) {}
+    constructor(
+        private readonly errorReporter = defaultErrorReporter,
+        private _environment: Environment = new Buildins()
+    ) {}
 
     get environment() {
         return this._environment;
@@ -99,14 +105,29 @@ export class Interpreter implements Visitor<LoxType> {
         return null;
     }
 
-    visitForStmt2(forstmt: ForStmt): LoxType {
-        let body = new Block([forstmt.body, forstmt.increment || new Literal(null)]);
-        let outer = new Block([
-            forstmt.initializer || new Literal(null),
-            new WhileStmt(forstmt.condition || new Literal(true), body),
-        ]);
+    visitFunctionStmt(functiondecl: FunctionStmt): LoxType {
+        this._environment.define(functiondecl.name.lexeme, new LoxFunction(functiondecl, this._environment));
+        return null;
+    }
 
-        return outer.visit(this);
+    visitReturnStmt(returnstmt: ReturnStmt): LoxType {
+        throw new ReturnException(returnstmt?.value?.visit(this) || null);
+    }
+
+    visitCall(call: Call): LoxType {
+        const callee = call.callee.visit(this);
+
+        const args = call.args.map((arg) => arg.visit(this));
+
+        if (!(callee instanceof Callable)) {
+            throw new RuntimeError(call.paren, "Can only call functions and classes.");
+        }
+
+        if (args.length !== callee.arity) {
+            throw new RuntimeError(call.paren, `Expected ${callee.arity} arguments but got ${args.length}.`);
+        }
+
+        return callee.call(this, args);
     }
 
     visitForStmt(forstmt: ForStmt): LoxType {
@@ -187,7 +208,7 @@ export class Interpreter implements Visitor<LoxType> {
         return null;
     }
 
-    visitPrint(print: PrintStmt): LoxType {
+    visitPrintStmt(print: PrintStmt): LoxType {
         console.log(this.stringify(print.expression.visit(this)));
         return null;
     }
@@ -278,7 +299,7 @@ export class Interpreter implements Visitor<LoxType> {
         }
     }
 
-    private executeBlock(statements: Array<Stmt>, environment: Environment): void {
+    executeBlock(statements: Array<Stmt>, environment: Environment): void {
         const previous = this._environment;
         try {
             this._environment = environment;
