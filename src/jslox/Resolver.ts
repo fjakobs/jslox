@@ -145,12 +145,10 @@ export class Resolver implements Visitor<void> {
     }
 
     private beginScope() {
-        console.log("beginScope");
         this.scopes.push(new Map<string, false | Token>());
     }
 
     private endScope() {
-        console.log("endScope");
         this.scopes.pop();
     }
 

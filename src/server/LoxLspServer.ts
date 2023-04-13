@@ -3,6 +3,8 @@ import {
     DefinitionLink,
     Diagnostic,
     DiagnosticSeverity,
+    HandlerResult,
+    Location,
     Position,
     PublishDiagnosticsParams,
     TextDocuments,
@@ -96,13 +98,10 @@ export class LoxLspServer {
     }
 
     onDefinition(uri: string, position: Position): Definition | DefinitionLink[] | null {
-        //const document = this.documents.get(uri);
         const loxDocument = this.loxDocuments.get(uri);
         if (!loxDocument) {
             return null;
         }
-
-        loxDocument.analyze();
 
         const offset = loxDocument.document.offsetAt(position);
         for (const [reference, definition] of loxDocument.references) {
@@ -114,6 +113,32 @@ export class LoxLspServer {
                         end: loxDocument.document.positionAt(definition.end),
                     },
                 };
+            }
+        }
+        return null;
+    }
+
+    onReferences(uri: string, position: Position): HandlerResult<Location[] | null | undefined, void> {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument) {
+            return null;
+        }
+
+        const offset = loxDocument.document.offsetAt(position);
+
+        for (const [definition, references] of loxDocument.definitions) {
+            if (definition.start <= offset && definition.end >= offset) {
+                const locations: Location[] = [];
+                for (const reference of references || []) {
+                    locations.push({
+                        uri: loxDocument.document.uri,
+                        range: {
+                            start: loxDocument.document.positionAt(reference.start),
+                            end: loxDocument.document.positionAt(reference.end),
+                        },
+                    });
+                }
+                return locations;
             }
         }
         return null;
