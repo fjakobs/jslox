@@ -82,7 +82,7 @@ export class Interpreter implements Visitor<LoxType> {
         if (this.isTruthy(branch.condition.visit(this))) {
             branch.thenBranch.visit(this);
         } else {
-            branch.elseBranch.visit(this);
+            branch.elseBranch?.visit(this);
         }
         return null;
     }

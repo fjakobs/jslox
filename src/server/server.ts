@@ -5,22 +5,15 @@
 import {
     createConnection,
     TextDocuments,
-    Diagnostic,
-    DiagnosticSeverity,
     ProposedFeatures,
     InitializeParams,
-    DidChangeConfigurationNotification,
-    CompletionItem,
-    CompletionItemKind,
     TextDocumentPositionParams,
     TextDocumentSyncKind,
     InitializeResult,
 } from "vscode-languageserver/node";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { Scanner } from "../jslox/Scanner";
-import { Parser } from "../jslox/Parser";
-import { ErrorReporter, RuntimeError } from "../jslox/Error";
+import { LoxLspServer } from "./LoxLspServer";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -28,6 +21,17 @@ const connection = createConnection(ProposedFeatures.all);
 
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+
+const loxServer = new LoxLspServer(documents, (type, params) => {
+    switch (type) {
+        case "diagnostics":
+            connection.sendDiagnostics(params);
+            break;
+
+        default:
+            break;
+    }
+});
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
@@ -53,6 +57,7 @@ connection.onInitialize((params: InitializeParams) => {
             completionProvider: {
                 resolveProvider: true,
             },
+            definitionProvider: true,
         },
     };
     if (hasWorkspaceFolderCapability) {
@@ -66,10 +71,6 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-    if (hasConfigurationCapability) {
-        // Register for all configuration changes.
-        connection.client.register(DidChangeConfigurationNotification.type, undefined);
-    }
     if (hasWorkspaceFolderCapability) {
         connection.workspace.onDidChangeWorkspaceFolders((_event) => {
             connection.console.log("Workspace folder change event received.");
@@ -77,130 +78,46 @@ connection.onInitialized(() => {
     }
 });
 
-connection.onDidChangeConfiguration((change) => {
-    // Revalidate all open text documents
-    documents.all().forEach(validateTextDocument);
-});
-
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-    validateTextDocument(change.document);
+    loxServer.onDidChangeContent(change.document.uri);
 });
 
-async function validateTextDocument2(textDocument: TextDocument): Promise<void> {
-    // In this simple example we get the settings for every validate run.
-
-    // The validator creates diagnostics for all uppercase words length 2 and more
-    const text = textDocument.getText();
-    const pattern = /\b[A-Z]{2,}\b/g;
-    let m: RegExpExecArray | null;
-
-    let problems = 0;
-    const diagnostics: Diagnostic[] = [];
-    while ((m = pattern.exec(text)) && problems < 1000) {
-        problems++;
-        const diagnostic: Diagnostic = {
-            severity: DiagnosticSeverity.Warning,
-            range: {
-                start: textDocument.positionAt(m.index),
-                end: textDocument.positionAt(m.index + m[0].length),
-            },
-            message: `${m[0]} is all uppercase.`,
-            source: "ex",
-        };
-        if (hasDiagnosticRelatedInformationCapability) {
-            diagnostic.relatedInformation = [
-                {
-                    location: {
-                        uri: textDocument.uri,
-                        range: Object.assign({}, diagnostic.range),
-                    },
-                    message: "Spelling matters",
-                },
-                {
-                    location: {
-                        uri: textDocument.uri,
-                        range: Object.assign({}, diagnostic.range),
-                    },
-                    message: "Particularly for names",
-                },
-            ];
-        }
-        diagnostics.push(diagnostic);
-    }
-
-    // Send the computed diagnostics to VSCode.
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
-
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-    const source = textDocument.getText();
-
-    const diagnostics: Diagnostic[] = [];
-    const reporter: ErrorReporter = {
-        error: (line: number, start: number, end: number, message: string) => {
-            const diagnostic: Diagnostic = {
-                severity: DiagnosticSeverity.Error,
-                range: {
-                    start: textDocument.positionAt(start),
-                    end: textDocument.positionAt(end),
-                },
-                message: message,
-                source: "Lox",
-            };
-            diagnostics.push(diagnostic);
-        },
-        runtimeError: function (error: RuntimeError): void {
-            // never happens during parsing
-        },
-    };
-
-    const tokens = new Scanner(source, reporter).scanTokens();
-    const parser = new Parser(tokens, reporter);
-    parser.parse();
-
-    // Send the computed diagnostics to VSCode.
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
-
-connection.onDidChangeWatchedFiles((_change) => {
-    // Monitored files have change in VSCode
-    connection.console.log("We received an file change event");
+connection.onDefinition((params: TextDocumentPositionParams) => {
+    return loxServer.onDefinition(params.textDocument.uri, params.position);
 });
 
-// This handler provides the initial list of the completion items.
-connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    // The pass parameter contains the position of the text document in
-    // which code complete got requested. For the example we ignore this
-    // info and always provide the same completion items.
-    return [
-        {
-            label: "TypeScript",
-            kind: CompletionItemKind.Text,
-            data: 1,
-        },
-        {
-            label: "JavaScript",
-            kind: CompletionItemKind.Text,
-            data: 2,
-        },
-    ];
-});
+// // This handler provides the initial list of the completion items.
+// connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+//     // The pass parameter contains the position of the text document in
+//     // which code complete got requested. For the example we ignore this
+//     // info and always provide the same completion items.
+//     return [
+//         {
+//             label: "TypeScript",
+//             kind: CompletionItemKind.Text,
+//             data: 1,
+//         },
+//         {
+//             label: "JavaScript",
+//             kind: CompletionItemKind.Text,
+//             data: 2,
+//         },
+//     ];
+// });
 
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-    console.log("Completed item: " + item.label);
-    if (item.data === 1) {
-        item.detail = "TypeScript details";
-        item.documentation = "TypeScript documentation";
-    } else if (item.data === 2) {
-        item.detail = "JavaScript details";
-        item.documentation = "JavaScript documentation";
-    }
-    return item;
-});
+// // This handler resolves additional information for the item selected in
+// // the completion list.
+// connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+//     console.log("Completed item: " + item.label);
+//     if (item.data === 1) {
+//         item.detail = "TypeScript details";
+//         item.documentation = "TypeScript documentation";
+//     } else if (item.data === 2) {
+//         item.detail = "JavaScript details";
+//         item.documentation = "JavaScript documentation";
+//     }
+//     return item;
+// });
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

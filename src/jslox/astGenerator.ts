@@ -13,7 +13,7 @@ const grammar: Record<string, Array<string>> = {
     "FunctionStmt Stmt": ["Token name", "Array<Token> params", "Array<Stmt> body"],
     "BreakStmt Stmt": [],
     "ContinueStmt Stmt": [],
-    "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt elseBranch"],
+    "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt|null elseBranch"],
     "Block Stmt": ["Array<Stmt> statements"],
     "PrintStmt Stmt": ["Expr expression"],
     "ReturnStmt Stmt": ["Token keyword", "Expr|null value"],

@@ -175,7 +175,7 @@ export class Parser {
             elseBranch = this.statement();
         }
 
-        return new IfStmt(condition, thenBranch, elseBranch || new Block([]));
+        return new IfStmt(condition, thenBranch, elseBranch || null);
     }
 
     private whileStatement(): Stmt {

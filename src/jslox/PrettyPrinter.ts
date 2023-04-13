@@ -39,7 +39,9 @@ export class PrettyPrinter implements Visitor<string> {
     }
 
     visitIfStmt(ifstmt: IfStmt): string {
-        return `(if ${ifstmt.condition.visit(this)} ${ifstmt.thenBranch.visit(this)} ${ifstmt.elseBranch.visit(this)})`;
+        return `(if ${ifstmt.condition.visit(this)} ${ifstmt.thenBranch.visit(this)} ${ifstmt.elseBranch?.visit(
+            this
+        )})`;
     }
 
     visitWhileStmt(whilestmt: WhileStmt): string {
