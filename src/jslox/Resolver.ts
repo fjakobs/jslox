@@ -15,6 +15,7 @@ import {
     Logical,
     PrintStmt,
     ReturnStmt,
+    Stmt,
     Unary,
     Variable,
     VariableDeclaration,
@@ -41,6 +42,17 @@ export class Resolver implements Visitor<void> {
 
     constructor(private errorReporter: ErrorReporter = defaultErrorReporter) {}
 
+    resolve(statements: Array<Stmt>) {
+        for (const statement of statements) {
+            statement.visit(this);
+        }
+        for (const [name, tokens] of this.definitions) {
+            if (tokens.length === 0) {
+                this.errorReporter.warn(name, `Variable '${name.lexeme}' is declared but never used.`);
+            }
+        }
+    }
+
     visitAssign(assign: Assign) {
         assign.value.visit(this);
         this.resolveLocal(assign, assign.name);
@@ -66,12 +78,7 @@ export class Resolver implements Visitor<void> {
         if (this.scopes.length !== 0) {
             const scope = this.scopes[this.scopes.length - 1];
             if (scope.has(variable.name.lexeme) && !scope.get(variable.name.lexeme)) {
-                this.errorReporter.error(
-                    variable.name.line,
-                    variable.name.start,
-                    variable.name.end,
-                    "Cannot read local variable in its own initializer."
-                );
+                this.errorReporter.error(variable.name, "Cannot read local variable in its own initializer.");
             }
         }
 
@@ -100,23 +107,13 @@ export class Resolver implements Visitor<void> {
 
     visitBreakStmt(breakstmt: BreakStmt) {
         if (this.loopDepth === 0) {
-            this.errorReporter.error(
-                breakstmt.keyword.line,
-                breakstmt.keyword.start,
-                breakstmt.keyword.end,
-                "Cannot break from top-level code."
-            );
+            this.errorReporter.error(breakstmt.keyword, "Cannot break from top-level code.");
         }
     }
 
     visitContinueStmt(continuestmt: ContinueStmt) {
         if (this.loopDepth === 0) {
-            this.errorReporter.error(
-                continuestmt.keyword.line,
-                continuestmt.keyword.start,
-                continuestmt.keyword.end,
-                "Cannot continue from top-level code."
-            );
+            this.errorReporter.error(continuestmt.keyword, "Cannot continue from top-level code.");
         }
     }
 
@@ -137,12 +134,7 @@ export class Resolver implements Visitor<void> {
 
     visitReturnStmt(returnstmt: ReturnStmt) {
         if (this.currentFunction === "none") {
-            this.errorReporter.error(
-                returnstmt.keyword.line,
-                returnstmt.keyword.start,
-                returnstmt.keyword.end,
-                "Cannot return from top-level code."
-            );
+            this.errorReporter.error(returnstmt.keyword, "Cannot return from top-level code.");
         }
         returnstmt.value?.visit(this);
     }
@@ -188,12 +180,7 @@ export class Resolver implements Visitor<void> {
 
         const scope = this.scopes[this.scopes.length - 1];
         if (scope.has(name.lexeme)) {
-            this.errorReporter.error(
-                name.line,
-                name.start,
-                name.end,
-                "Variable with this name already declared in this scope."
-            );
+            this.errorReporter.error(name, "Variable with this name already declared in this scope.");
         }
 
         scope.set(name.lexeme, false);

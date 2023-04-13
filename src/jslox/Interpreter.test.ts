@@ -3,16 +3,19 @@ import * as assert from "assert";
 import { Scanner } from "./Scanner";
 import { Parser } from "./Parser";
 import { Expr, Stmt } from "./Expr";
-import { ErrorReporter, RuntimeError } from "./Error";
+import { ErrorReporter, RuntimeError, TokenPosition } from "./Error";
 import { Resolver } from "./Resolver";
 import exp = require("constants");
 
 export const testErrorReporter: ErrorReporter = {
-    error: (line: number, start: number, end: number, message: string) => {
-        console.error(`[line ${line}] Error: ${message}`);
+    error: (token: TokenPosition, message: string) => {
+        console.error(`[line ${token.line}] Error: ${message}`);
         assert.fail(message);
     },
-
+    warn: (token: TokenPosition, message: string) => {
+        console.warn(`[line ${token.line}] Warning: ${message}`);
+        assert.fail(message);
+    },
     runtimeError: function (error: RuntimeError): void {
         console.error(error.message);
         assert.fail(error.message);
@@ -38,7 +41,7 @@ function parseStatements(source: string): [Array<Stmt>, Map<Expr, number>] {
     const statements = parser.parse()!;
 
     const resolver = new Resolver(testErrorReporter);
-    statements.forEach((statement) => statement.visit(resolver));
+    resolver.resolve(statements);
 
     return [statements, resolver.resolved];
 }
@@ -65,7 +68,8 @@ describe("Interpreter", () => {
     it("should report runtime errors", () => {
         let called = false;
         const errorReporter = {
-            error: (line: number, start: number, end: number, message: string) => {},
+            error: (token: TokenPosition, message: string) => {},
+            warn: (token: TokenPosition, message: string) => {},
             runtimeError: () => {
                 called = true;
             },
@@ -79,7 +83,8 @@ describe("Interpreter", () => {
     it("should report runtime errors for division by zero", () => {
         let called = false;
         const errorReporter = {
-            error: (line: number, start: number, end: number, message: string) => {},
+            error: (token: TokenPosition, message: string) => {},
+            warn: (token: TokenPosition, message: string) => {},
             runtimeError: () => {
                 called = true;
             },
@@ -180,7 +185,8 @@ describe("Interpreter", () => {
     it("should not call numbers", () => {
         let called = false;
         const errorReporter = {
-            error: (line: number, start: number, end: number, message: string) => {},
+            error: (token: TokenPosition, message: string) => {},
+            warn: (token: TokenPosition, message: string) => {},
             runtimeError: () => {
                 called = true;
             },

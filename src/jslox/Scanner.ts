@@ -116,7 +116,14 @@ export class Scanner {
                 } else if (this.isAlpha(c)) {
                     yield* this.identifier();
                 } else {
-                    this.errorReporter.error(this.line, this.current, this.current, "Unexpected character.");
+                    this.errorReporter.error(
+                        {
+                            line: this.line,
+                            start: this.current,
+                            end: this.current + 1,
+                        },
+                        "Unexpected character."
+                    );
                 }
                 break;
         }
@@ -178,7 +185,14 @@ export class Scanner {
         }
 
         if (this.isAtEnd()) {
-            this.errorReporter.error(this.line, this.current, this.current, "Unterminated string.");
+            this.errorReporter.error(
+                {
+                    line: this.line,
+                    start: this.current,
+                    end: this.current + 1,
+                },
+                "Unterminated string."
+            );
             return;
         }
 

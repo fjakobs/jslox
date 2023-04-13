@@ -1,4 +1,4 @@
-import { RuntimeError, silentErrorReporter } from "./Error";
+import { RuntimeError, TokenPosition, silentErrorReporter } from "./Error";
 import { Interpreter } from "./Interpreter";
 import { Parser } from "./Parser";
 import { Resolver } from "./Resolver";
@@ -14,13 +14,13 @@ export class Lox {
         this.interpreter = new Interpreter(this);
     }
 
-    error(line: number, start: number, end: number, message: string) {
-        this.report(line, "", message);
+    error(token: TokenPosition, message: string) {
+        console.error(`[line ${token.line}] Error: ${message}`);
+        this.hadError = true;
     }
 
-    report(line: number, where: string, message: string) {
-        console.error(`[line ${line}] Error${where}: ${message}`);
-        this.hadError = true;
+    warn(token: TokenPosition, message: string) {
+        console.warn(`[line ${token.line}] Warning: ${message}`);
     }
 
     runtimeError(error: RuntimeError) {
@@ -56,7 +56,7 @@ export class Lox {
         }
 
         const resolver = new Resolver(this);
-        expression.visit(resolver);
+        resolver.resolve([expression]);
 
         if (this.hadError) {
             return;
@@ -75,7 +75,7 @@ export class Lox {
         }
 
         const resolver = new Resolver(this);
-        statements.forEach((statement) => statement.visit(resolver));
+        resolver.resolve(statements);
 
         if (this.hadError) {
             return;

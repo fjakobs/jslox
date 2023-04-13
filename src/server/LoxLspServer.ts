@@ -30,13 +30,25 @@ export class LoxDocument {
         this.diagnostics = [];
         this.hadError = false;
         const reporter: ErrorReporter = {
-            error: (line: number, start: number, end: number, message: string) => {
+            error: (token: Token, message: string) => {
                 this.hadError = true;
                 const diagnostic: Diagnostic = {
                     severity: DiagnosticSeverity.Error,
                     range: {
-                        start: this.document.positionAt(start),
-                        end: this.document.positionAt(end),
+                        start: this.document.positionAt(token.start),
+                        end: this.document.positionAt(token.end),
+                    },
+                    message: message,
+                    source: "Lox",
+                };
+                this.diagnostics.push(diagnostic);
+            },
+            warn: (token: Token, message: string) => {
+                const diagnostic: Diagnostic = {
+                    severity: DiagnosticSeverity.Warning,
+                    range: {
+                        start: this.document.positionAt(token.start),
+                        end: this.document.positionAt(token.end),
                     },
                     message: message,
                     source: "Lox",
@@ -55,7 +67,7 @@ export class LoxDocument {
         }
 
         const resolver = new Resolver(reporter);
-        statements.forEach((statement) => statement.visit(resolver));
+        resolver.resolve(statements);
 
         this.definitions = resolver.definitions;
         this.references = resolver.references;

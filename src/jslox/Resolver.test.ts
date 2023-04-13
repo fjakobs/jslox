@@ -2,6 +2,7 @@ import * as assert from "assert";
 import { Parser } from "./Parser";
 import { Scanner } from "./Scanner";
 import { Resolver } from "./Resolver";
+import { TokenPosition } from "./Error";
 
 describe("Resolver", () => {
     it("should resolve local variables", () => {
@@ -10,7 +11,7 @@ describe("Resolver", () => {
 
         assert.ok(program !== null);
         const resolver = new Resolver();
-        program.forEach((stmt) => stmt.visit(resolver));
+        resolver.resolve(program);
 
         assert.equal([...resolver.references.entries()].length, 1);
         assert.equal([...resolver.definitions.entries()].length, 1);
@@ -31,13 +32,14 @@ describe("Resolver", () => {
 
         let called = false;
         const resolver = new Resolver({
-            error: (line: number, start: number, end: number, message: string) => {
+            error: (token: TokenPosition, message: string) => {
                 called = true;
                 assert.equal(message, "Variable with this name already declared in this scope.");
             },
+            warn: () => {},
             runtimeError: () => {},
         });
-        program.forEach((stmt) => stmt.visit(resolver));
+        resolver.resolve(program);
         assert.ok(called);
     });
 
@@ -49,13 +51,14 @@ describe("Resolver", () => {
 
         let called = false;
         const resolver = new Resolver({
-            error: (line: number, start: number, end: number, message: string) => {
+            error: (token: TokenPosition, message: string) => {
                 called = true;
                 assert.equal(message, "Cannot return from top-level code.");
             },
+            warn: () => {},
             runtimeError: () => {},
         });
-        program.forEach((stmt) => stmt.visit(resolver));
+        resolver.resolve(program);
         assert.ok(called);
     });
 
@@ -67,13 +70,33 @@ describe("Resolver", () => {
 
         let called = false;
         const resolver = new Resolver({
-            error: (line: number, start: number, end: number, message: string) => {
+            error: (token: TokenPosition, message: string) => {
                 called = true;
                 assert.equal(message, "Cannot break from top-level code.");
             },
+            warn: () => {},
             runtimeError: () => {},
         });
-        program.forEach((stmt) => stmt.visit(resolver));
+        resolver.resolve(program);
+        assert.ok(called);
+    });
+
+    it("should give a warning if variable is never used", () => {
+        const parser = new Parser(new Scanner("var a;").scanTokens());
+        const program = parser.parse();
+
+        assert.ok(program !== null);
+
+        let called = false;
+        const resolver = new Resolver({
+            error: () => {},
+            warn: (token: TokenPosition, message: string) => {
+                called = true;
+                assert.equal(message, "Variable 'a' is declared but never used.");
+            },
+            runtimeError: () => {},
+        });
+        resolver.resolve(program);
         assert.ok(called);
     });
 });

@@ -1,6 +1,7 @@
 import { Scanner } from "./Scanner";
 import * as assert from "node:assert";
 import { Token, TokenType } from "./Token";
+import { TokenPosition } from "./Error";
 
 function assertToken(token: Token, type: TokenType, lexeme: string, literal: any, line: number) {
     assert.equal(token.type, type);
@@ -53,10 +54,13 @@ describe("Scanner", () => {
     it("should give an error for unterminated strings", () => {
         let called = false;
         const scanner = new Scanner(`"hello`, {
-            error: (line: number, start: number, end: number, message: string) => {
-                assert.equal(line, 1);
+            error: (token: TokenPosition, message: string) => {
+                assert.equal(token.line, 1);
                 assert.equal(message, "Unterminated string.");
                 called = true;
+            },
+            warn: (token: TokenPosition, message: string) => {
+                assert.fail("Unexpected warning");
             },
             runtimeError(error) {
                 assert.fail("Unexpected runtime error");

@@ -2,13 +2,16 @@ import { Parser } from "./Parser";
 import * as assert from "assert";
 import { Scanner } from "./Scanner";
 import { PrettyPrinter } from "./PrettyPrinter";
-import { RuntimeError } from "./Error";
+import { RuntimeError, TokenPosition } from "./Error";
 
 describe("Parser", () => {
     it("should be able to parse a single expression", () => {
         const parser = new Parser(new Scanner("1 + 2").scanTokens(), {
-            error: (line: number, start: number, end: number, message: string) => {
-                assert.fail(`[line ${line}] Error: ${message}`);
+            error: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Error: ${message}`);
+            },
+            warn: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Warning: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
                 assert.fail(error.message);
@@ -24,8 +27,11 @@ describe("Parser", () => {
 
     it("should be able to parse a single expression with grouping", () => {
         const parser = new Parser(new Scanner("(1 + 2 * 6) - 13").scanTokens(), {
-            error: (line: number, start: number, end: number, message: string) => {
-                assert.fail(`[line ${line}] Error: ${message}`);
+            error: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Error: ${message}`);
+            },
+            warn: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Warning: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
                 assert.fail(error.message);
@@ -41,8 +47,11 @@ describe("Parser", () => {
 
     it("should be able to parse multiple statement expressions", () => {
         const parser = new Parser(new Scanner("1 + 2; 3 * 4;").scanTokens(), {
-            error: (line: number, start: number, end: number, message: string) => {
-                assert.fail(`[line ${line}] Error: ${message}`);
+            error: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Error: ${message}`);
+            },
+            warn: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Warning: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
                 assert.fail(error.message);
@@ -58,8 +67,11 @@ describe("Parser", () => {
 
     it("should parse variable declarations", () => {
         const parser = new Parser(new Scanner("var a = 1; print a;").scanTokens(), {
-            error: (line: number, start: number, end: number, message: string) => {
-                assert.fail(`[line ${line}] Error: ${message}`);
+            error: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Error: ${message}`);
+            },
+            warn: (token: TokenPosition, message: string) => {
+                assert.fail(`[line ${token.line}] Warning: ${message}`);
             },
             runtimeError: (error: RuntimeError) => {
                 assert.fail(error.message);
