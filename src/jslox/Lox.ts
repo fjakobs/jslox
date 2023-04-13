@@ -1,6 +1,7 @@
 import { RuntimeError, silentErrorReporter } from "./Error";
 import { Interpreter } from "./Interpreter";
 import { Parser } from "./Parser";
+import { Resolver } from "./Resolver";
 import { Scanner } from "./Scanner";
 
 export class Lox {
@@ -38,6 +39,7 @@ export class Lox {
                 this.hadError = false;
                 return false;
             }
+
             return true;
         } catch (e) {
             return false;
@@ -53,7 +55,14 @@ export class Lox {
             return;
         }
 
-        return this.interpreter.interpret(expression);
+        const resolver = new Resolver(this);
+        expression.visit(resolver);
+
+        if (this.hadError) {
+            return;
+        }
+
+        return this.interpreter.interpret(expression, resolver.resolved);
     }
 
     run(source: string): any {
@@ -65,6 +74,13 @@ export class Lox {
             return;
         }
 
-        return this.interpreter.evaluate(statements);
+        const resolver = new Resolver(this);
+        statements.forEach((statement) => statement.visit(resolver));
+
+        if (this.hadError) {
+            return;
+        }
+
+        return this.interpreter.evaluate(statements, resolver.resolved);
     }
 }

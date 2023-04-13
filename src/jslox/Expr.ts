@@ -111,7 +111,7 @@ export class FunctionStmt implements Stmt {
 }
 
 export class BreakStmt implements Stmt {
-    constructor() {}
+    constructor(readonly keyword: Token) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitBreakStmt(this);
@@ -119,7 +119,7 @@ export class BreakStmt implements Stmt {
 }
 
 export class ContinueStmt implements Stmt {
-    constructor() {}
+    constructor(readonly keyword: Token) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitContinueStmt(this);

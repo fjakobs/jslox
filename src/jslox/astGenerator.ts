@@ -11,8 +11,8 @@ const grammar: Record<string, Array<string>> = {
 
     "Expression Stmt": ["Expr expression"],
     "FunctionStmt Stmt": ["Token name", "Array<Token> params", "Array<Stmt> body"],
-    "BreakStmt Stmt": [],
-    "ContinueStmt Stmt": [],
+    "BreakStmt Stmt": ["Token keyword"],
+    "ContinueStmt Stmt": ["Token keyword"],
     "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt|null elseBranch"],
     "Block Stmt": ["Array<Stmt> statements"],
     "PrintStmt Stmt": ["Expr expression"],

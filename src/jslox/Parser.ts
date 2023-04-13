@@ -140,11 +140,13 @@ export class Parser {
         } else if (this.match("FOR")) {
             return this.forStatement();
         } else if (this.match("BREAK")) {
+            const token = this.previous!;
             this.consume("SEMICOLON", "Expect ';' after 'break'.");
-            return new BreakStmt();
+            return new BreakStmt(token);
         } else if (this.match("CONTINUE")) {
+            const token = this.previous!;
             this.consume("SEMICOLON", "Expect ';' after 'continue'.");
-            return new ContinueStmt();
+            return new ContinueStmt(token);
         } else if (this.match("RETURN")) {
             return this.returnStatement();
         }

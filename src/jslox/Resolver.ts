@@ -24,6 +24,8 @@ import {
 import { Token } from "./Token";
 import { ErrorReporter, defaultErrorReporter } from "./Error";
 
+export type FunctionType = "none" | "function";
+
 export class Resolver implements Visitor<void> {
     private scopes: Array<Map<string, false | Token>> = [new Map()];
     readonly resolved: Map<Expr, number> = new Map();
@@ -33,6 +35,9 @@ export class Resolver implements Visitor<void> {
 
     // map of variable name to token where it is declared
     readonly references: Map<Token, Token> = new Map();
+
+    private currentFunction: FunctionType = "none";
+    private loopDepth = 0;
 
     constructor(private errorReporter: ErrorReporter = defaultErrorReporter) {}
 
@@ -90,18 +95,30 @@ export class Resolver implements Visitor<void> {
         this.declare(functionstmt.name);
         this.define(functionstmt.name);
 
-        this.beginScope();
-        functionstmt.params.forEach((param) => {
-            this.declare(param);
-            this.define(param);
-        });
-        functionstmt.body.forEach((statement) => statement.visit(this));
-        this.endScope();
+        this.resolveFunction(functionstmt, "function");
     }
 
-    visitBreakStmt(breakstmt: BreakStmt) {}
+    visitBreakStmt(breakstmt: BreakStmt) {
+        if (this.loopDepth === 0) {
+            this.errorReporter.error(
+                breakstmt.keyword.line,
+                breakstmt.keyword.start,
+                breakstmt.keyword.end,
+                "Cannot break from top-level code."
+            );
+        }
+    }
 
-    visitContinueStmt(continuestmt: ContinueStmt) {}
+    visitContinueStmt(continuestmt: ContinueStmt) {
+        if (this.loopDepth === 0) {
+            this.errorReporter.error(
+                continuestmt.keyword.line,
+                continuestmt.keyword.start,
+                continuestmt.keyword.end,
+                "Cannot continue from top-level code."
+            );
+        }
+    }
 
     visitIfStmt(ifstmt: IfStmt) {
         ifstmt.condition.visit(this);
@@ -119,12 +136,22 @@ export class Resolver implements Visitor<void> {
     }
 
     visitReturnStmt(returnstmt: ReturnStmt) {
+        if (this.currentFunction === "none") {
+            this.errorReporter.error(
+                returnstmt.keyword.line,
+                returnstmt.keyword.start,
+                returnstmt.keyword.end,
+                "Cannot return from top-level code."
+            );
+        }
         returnstmt.value?.visit(this);
     }
 
     visitWhileStmt(whilestmt: WhileStmt) {
         whilestmt.condition.visit(this);
+        this.loopDepth++;
         whilestmt.body.visit(this);
+        this.loopDepth--;
     }
 
     visitForStmt(forstmt: ForStmt) {
@@ -132,7 +159,9 @@ export class Resolver implements Visitor<void> {
         forstmt.initializer?.visit(this);
         forstmt.condition?.visit(this);
         forstmt.increment?.visit(this);
+        this.loopDepth++;
         forstmt.body.visit(this);
+        this.loopDepth--;
         this.endScope();
     }
 
@@ -159,7 +188,12 @@ export class Resolver implements Visitor<void> {
 
         const scope = this.scopes[this.scopes.length - 1];
         if (scope.has(name.lexeme)) {
-            // TODO
+            this.errorReporter.error(
+                name.line,
+                name.start,
+                name.end,
+                "Variable with this name already declared in this scope."
+            );
         }
 
         scope.set(name.lexeme, false);
@@ -168,6 +202,21 @@ export class Resolver implements Visitor<void> {
     private define(name: Token) {
         this.scopes[this.scopes.length - 1].set(name.lexeme, name);
         this.definitions.set(name, []);
+    }
+
+    private resolveFunction(functionstmt: FunctionStmt, functionType: FunctionType) {
+        const enclosingFunction = this.currentFunction;
+        this.currentFunction = functionType;
+
+        this.beginScope();
+        functionstmt.params.forEach((param) => {
+            this.declare(param);
+            this.define(param);
+        });
+        functionstmt.body.forEach((statement) => statement.visit(this));
+        this.endScope();
+
+        this.currentFunction = enclosingFunction;
     }
 
     private resolveLocal(expr: Expr, name: Token) {

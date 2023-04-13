@@ -23,6 +23,18 @@ export class Environment {
         throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
     }
 
+    getAt(distance: number, lexeme: string): LoxType {
+        return this.ancestor(distance).values.get(lexeme)!;
+    }
+
+    ancestor(distance: number): Environment {
+        let environment: Environment = this;
+        for (let i = 0; i < distance; i++) {
+            environment = environment.enclosing!;
+        }
+        return environment;
+    }
+
     assign(name: Token, value: LoxType): void {
         if (this.values.has(name.lexeme)) {
             this.values.set(name.lexeme, value);
@@ -35,6 +47,10 @@ export class Environment {
         }
 
         throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
+    }
+
+    assignAt(distance: number, name: Token, value: string | number | boolean | import("./Callable").Callable | null) {
+        this.ancestor(distance).values.set(name.lexeme, value);
     }
 
     // mostly for testing

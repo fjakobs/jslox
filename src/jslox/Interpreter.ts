@@ -34,16 +34,19 @@ export class BreakException extends Error {}
 export class ContinueException extends Error {}
 
 export class Interpreter implements Visitor<LoxType> {
-    constructor(
-        private readonly errorReporter = defaultErrorReporter,
-        private _environment: Environment = new Buildins()
-    ) {}
+    private _environment: Environment;
+    private locals: Map<Expr, number> = new Map();
+
+    constructor(private readonly errorReporter = defaultErrorReporter, private globals: Environment = new Buildins()) {
+        this._environment = globals;
+    }
 
     get environment() {
         return this._environment;
     }
 
-    interpret(expr: Expr): LoxType {
+    interpret(expr: Expr, locals: Map<Expr, number>): LoxType {
+        this.locals = locals;
         try {
             return this.stringify(expr.visit(this));
         } catch (e) {
@@ -56,7 +59,8 @@ export class Interpreter implements Visitor<LoxType> {
         }
     }
 
-    evaluate(stmt: Array<Stmt>): void {
+    evaluate(stmt: Array<Stmt>, locals: Map<Expr, number>): void {
+        this.locals = locals;
         try {
             for (const statement of stmt) {
                 statement.visit(this);
@@ -186,12 +190,19 @@ export class Interpreter implements Visitor<LoxType> {
 
     visitAssign(assign: Assign): LoxType {
         const value = assign.value.visit(this);
-        this._environment.assign(assign.name, value);
+
+        const distance = this.locals.get(assign);
+        if (distance !== undefined) {
+            this._environment.assignAt(distance, assign.name, value);
+        } else {
+            this.globals.assign(assign.name, value);
+        }
+
         return value;
     }
 
     visitVariable(variable: Variable): LoxType {
-        return this._environment.get(variable.name);
+        return this.lookUpVariable(variable.name, variable);
     }
 
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): LoxType {
@@ -308,6 +319,16 @@ export class Interpreter implements Visitor<LoxType> {
             }
         } finally {
             this._environment = previous;
+        }
+    }
+
+    private lookUpVariable(name: Token, expr: Expr): LoxType {
+        const distance = this.locals.get(expr);
+
+        if (distance !== undefined) {
+            return this._environment.getAt(distance, name.lexeme);
+        } else {
+            return this.globals.get(name);
         }
     }
 
