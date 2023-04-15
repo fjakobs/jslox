@@ -49,7 +49,7 @@ export class Environment {
         throw new RuntimeError(name, `Undefined variable '${name.lexeme}'.`);
     }
 
-    assignAt(distance: number, name: Token, value: string | number | boolean | import("./Callable").Callable | null) {
+    assignAt(distance: number, name: Token, value: LoxType) {
         this.ancestor(distance).values.set(name.lexeme, value);
     }
 

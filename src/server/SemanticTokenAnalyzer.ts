@@ -4,17 +4,21 @@ import {
     Block,
     BreakStmt,
     Call,
+    ClassStmt,
     ContinueStmt,
     Expression,
     ForStmt,
     FunctionStmt,
+    Get,
     Grouping,
     IfStmt,
     Literal,
     Logical,
     PrintStmt,
     ReturnStmt,
+    Set,
     Stmt,
+    ThisExpr,
     Unary,
     Variable,
     VariableDeclaration,
@@ -23,10 +27,18 @@ import {
 } from "../jslox/Expr";
 import { Resolver } from "../jslox/Resolver";
 
+export const TOKEN_LEGEND = ["class", "function", "variable", "parameter", "property"] as const;
+export type TokenType = (typeof TOKEN_LEGEND)[number];
+
+export const TOKEN_TO_ID = TOKEN_LEGEND.reduce((map, token, index) => {
+    map[token] = index;
+    return map;
+}, {} as { [key: string]: number });
+
 export interface SemanticToken {
     start: number;
     end: number;
-    type: string;
+    type: TokenType;
 }
 
 export class SemanticTokenAnalyzer implements Visitor<void> {
@@ -69,14 +81,12 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
     }
 
     visitVariable(variable: Variable): void {
-        let type = "variable";
+        let type: TokenType = "variable";
 
         if (this.resolver) {
             const def = this.resolver.references.get(variable.name);
             if (def) {
-                if (this.resolver.definitionType.has(def)) {
-                    type = "parameter";
-                }
+                type = this.resolver.definitionType.get(def) || "parameter";
             }
         }
 
@@ -101,6 +111,45 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
     visitExpression(expression: Expression): void {
         expression.expression.visit(this);
     }
+
+    visitClassStmt(classstmt: ClassStmt): void {
+        this.tokens.push({
+            start: classstmt.name.start,
+            end: classstmt.name.end,
+            type: "class",
+        });
+
+        for (const method of classstmt.methods) {
+            method.visit(this);
+            this.tokens.push({
+                start: method.name.start,
+                end: method.name.end,
+                type: "property",
+            });
+        }
+    }
+
+    visitGet(get: Get): void {
+        get.object.visit(this);
+        this.tokens.push({
+            start: get.name.start,
+            end: get.name.end,
+            type: "property",
+        });
+    }
+
+    visitSet(set: Set): void {
+        set.object.visit(this);
+        this.tokens.push({
+            start: set.name.start,
+            end: set.name.end,
+            type: "property",
+        });
+
+        set.value.visit(this);
+    }
+
+    visitThisExpr(thisexpr: ThisExpr): void {}
 
     visitFunctionStmt(functionstmt: FunctionStmt): void {
         this.tokens.push({

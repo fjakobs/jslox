@@ -5,10 +5,13 @@ import {
     Block,
     BreakStmt,
     Call,
+    ClassStmt,
     ContinueStmt,
     Expr,
     ForStmt,
     FunctionStmt,
+    Get,
+    Set,
     Grouping,
     IfStmt,
     Literal,
@@ -20,6 +23,7 @@ import {
     Variable,
     VariableDeclaration,
     WhileStmt,
+    ThisExpr,
 } from "./Expr";
 import { Token, TokenType } from "./Token";
 
@@ -77,8 +81,9 @@ export class Parser {
         try {
             if (this.match("FUN")) {
                 return this.functionDeclaration("function");
-            }
-            if (this.match("VAR")) {
+            } else if (this.match("CLASS")) {
+                return this.classDeclaration();
+            } else if (this.match("VAR")) {
                 return this.varDeclaration();
             } else {
                 return this.statement();
@@ -93,7 +98,28 @@ export class Parser {
         }
     }
 
-    private functionDeclaration(kind: string): Stmt {
+    private classDeclaration(): Stmt {
+        const name = this.consume("IDENTIFIER", "Expect class name.");
+
+        // let superclass: Variable | null = null;
+        // if (this.match("LESS")) {
+        //     this.consume("IDENTIFIER", "Expect superclass name.");
+        //     superclass = new Variable(this.previous);
+        // }
+
+        this.consume("LEFT_BRACE", "Expect '{' before class body.");
+
+        const methods: Array<FunctionStmt> = [];
+        while (!this.check("RIGHT_BRACE") && !this.isAtEnd) {
+            methods.push(this.functionDeclaration("method"));
+        }
+
+        this.consume("RIGHT_BRACE", "Expect '}' after class body.");
+
+        return new ClassStmt(name, methods);
+    }
+
+    private functionDeclaration(kind: "function" | "method"): FunctionStmt {
         const name = this.consume("IDENTIFIER", `Expect ${kind} name.`);
 
         this.consume("LEFT_PAREN", `Expect '(' after ${kind} name.`);
@@ -258,6 +284,9 @@ export class Parser {
             if (expr instanceof Variable) {
                 const name = expr.name;
                 return new Assign(name, value);
+            } else if (expr instanceof Get) {
+                const get = expr;
+                return new Set(get.object, get.name, value);
             }
 
             this.error(equals, "Invalid assignment target.");
@@ -354,6 +383,9 @@ export class Parser {
         while (true) {
             if (this.match("LEFT_PAREN")) {
                 expr = this.finishCall(expr);
+            } else if (this.match("DOT")) {
+                const name = this.consume("IDENTIFIER", "Expect property name after '.'.");
+                expr = new Get(expr, name!);
             } else {
                 break;
             }
@@ -404,6 +436,10 @@ export class Parser {
             const expr = this.expression();
             this.consume("RIGHT_PAREN", "Expect ')' after expression.");
             return new Grouping(expr);
+        }
+
+        if (this.match("THIS")) {
+            return new ThisExpr(this.previous!);
         }
 
         throw this.error(this.current!, "Expect expression.");

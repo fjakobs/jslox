@@ -1,6 +1,7 @@
 import { Environment } from "./Environment";
-import { Block, FunctionStmt } from "./Expr";
+import { FunctionStmt } from "./Expr";
 import { Interpreter, LoxType } from "./Interpreter";
+import { LoxInstance } from "./LoxInstance";
 
 export class ReturnException extends Error {
     constructor(public value: LoxType) {
@@ -15,12 +16,22 @@ export abstract class Callable {
 }
 
 export class LoxFunction extends Callable {
-    constructor(private readonly declaration: FunctionStmt, private readonly closure: Environment) {
+    constructor(
+        private readonly declaration: FunctionStmt,
+        private readonly closure: Environment,
+        private isInitializer: boolean = false
+    ) {
         super();
     }
 
     get arity() {
         return this.declaration.params.length;
+    }
+
+    bind(instance: LoxInstance): LoxFunction {
+        const environment = new Environment(this.closure);
+        environment.define("this", instance);
+        return new LoxFunction(this.declaration, environment, this.isInitializer);
     }
 
     call(interpreter: Interpreter, args: Array<LoxType>): LoxType {
@@ -34,8 +45,15 @@ export class LoxFunction extends Callable {
             interpreter.executeBlock(this.declaration.body, environment);
         } catch (e) {
             if (e instanceof ReturnException) {
+                if (this.isInitializer) {
+                    return this.closure.getAt(0, "this");
+                }
                 return e.value;
             }
+        }
+
+        if (this.isInitializer) {
+            return this.closure.getAt(0, "this");
         }
 
         return null;

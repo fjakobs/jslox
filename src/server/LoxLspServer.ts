@@ -17,7 +17,7 @@ import { Scanner } from "../jslox/Scanner";
 import { Parser } from "../jslox/Parser";
 import { Resolver } from "../jslox/Resolver";
 import { Token } from "../jslox/Token";
-import { SemanticToken, SemanticTokenAnalyzer } from "./SemanticTokenAnalyzer";
+import { SemanticToken, SemanticTokenAnalyzer, TOKEN_TO_ID } from "./SemanticTokenAnalyzer";
 
 export class LoxDocument {
     public diagnostics: Diagnostic[] = [];
@@ -89,11 +89,6 @@ type LspEventListner = ((type: "diagnostics", params: PublishDiagnosticsParams) 
 
 export class LoxLspServer {
     loxDocuments: Map<string, LoxDocument> = new Map();
-    static tokenLegend = ["class", "function", "variable"];
-    static tokenToId = this.tokenLegend.reduce((map, token, index) => {
-        map[token] = index;
-        return map;
-    }, {} as { [key: string]: number });
 
     constructor(private documents: TextDocuments<TextDocument>, private listener: LspEventListner) {
         this.documents.onDidChangeContent((change) => {
@@ -181,7 +176,9 @@ export class LoxLspServer {
         for (const token of loxDocument.semanticTokens) {
             const { line, character } = loxDocument.document.positionAt(token.start);
             const length = token.end - token.start;
-            const typeId = LoxLspServer.tokenToId[token.type];
+            const typeId = TOKEN_TO_ID[token.type];
+
+            console.log(token, typeId);
             builder.push(line, character, length, typeId, 0);
         }
 

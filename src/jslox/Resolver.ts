@@ -4,11 +4,14 @@ import {
     Block,
     BreakStmt,
     Call,
+    ClassStmt,
     ContinueStmt,
     Expr,
     Expression,
     ForStmt,
     FunctionStmt,
+    Get,
+    Set,
     Grouping,
     IfStmt,
     Literal,
@@ -21,11 +24,13 @@ import {
     VariableDeclaration,
     Visitor,
     WhileStmt,
+    ThisExpr,
 } from "./Expr";
 import { Token } from "./Token";
 import { ErrorReporter, defaultErrorReporter } from "./Error";
 
-export type FunctionType = "none" | "function";
+export type FunctionType = "none" | "function" | "initializer" | "method";
+export type ClassType = "none" | "class";
 
 export class Resolver implements Visitor<void> {
     private scopes: Array<Map<string, false | Token>> = [new Map()];
@@ -37,8 +42,9 @@ export class Resolver implements Visitor<void> {
     // map of variable name to token where it is declared
     readonly references: Map<Token, Token> = new Map();
 
-    readonly definitionType: Map<Token, "parameter" | "function" | "class"> = new Map();
+    readonly definitionType: Map<Token, "parameter" | "function" | "class" | "property"> = new Map();
 
+    private currentClass: ClassType = "none";
     private currentFunction: FunctionType = "none";
     private loopDepth = 0;
 
@@ -91,6 +97,15 @@ export class Resolver implements Visitor<void> {
         unary.right.visit(this);
     }
 
+    visitGet(get: Get): void {
+        get.object.visit(this);
+    }
+
+    visitSet(set: Set): void {
+        set.value.visit(this);
+        set.object.visit(this);
+    }
+
     visitCall(call: Call) {
         call.callee.visit(this);
         call.args.forEach((arg) => arg.visit(this));
@@ -98,6 +113,38 @@ export class Resolver implements Visitor<void> {
 
     visitExpression(expression: Expression) {
         expression.expression.visit(this);
+    }
+
+    visitClassStmt(classstmt: ClassStmt): void {
+        const enclosingClass = this.currentClass;
+        this.currentClass = "class";
+
+        this.declare(classstmt.name);
+        this.define(classstmt.name);
+
+        this.beginScope();
+        this.scopes[this.scopes.length - 1].set("this", classstmt.name);
+
+        classstmt.methods.forEach((method) => {
+            this.definitionType.set(method.name, "property");
+            let declaration: FunctionType = "method";
+            if (method.name.lexeme === "init") {
+                declaration = "initializer";
+            }
+            this.resolveFunction(method, declaration);
+        });
+
+        this.endScope();
+        this.definitionType.set(classstmt.name, "class");
+        this.currentClass = enclosingClass;
+    }
+
+    visitThisExpr(thisexpr: ThisExpr): void {
+        if (this.currentClass === "none") {
+            this.errorReporter.error(thisexpr.keyword, "Cannot use 'this' outside of a class.");
+            return;
+        }
+        this.resolveLocal(thisexpr, thisexpr.keyword);
     }
 
     visitFunctionStmt(functionstmt: FunctionStmt) {
@@ -138,6 +185,9 @@ export class Resolver implements Visitor<void> {
     visitReturnStmt(returnstmt: ReturnStmt) {
         if (this.currentFunction === "none") {
             this.errorReporter.error(returnstmt.keyword, "Cannot return from top-level code.");
+        }
+        if (returnstmt.value !== null && this.currentFunction === "initializer") {
+            this.errorReporter.error(returnstmt.keyword, "Cannot return a value from an initializer.");
         }
         returnstmt.value?.visit(this);
     }

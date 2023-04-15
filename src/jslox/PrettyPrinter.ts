@@ -4,16 +4,20 @@ import {
     Block,
     BreakStmt,
     Call,
+    ClassStmt,
     ContinueStmt,
     Expression,
     ForStmt,
     FunctionStmt,
+    Get,
     Grouping,
     IfStmt,
     Literal,
     Logical,
     PrintStmt,
     ReturnStmt,
+    Set,
+    ThisExpr,
     Unary,
     Variable,
     VariableDeclaration,
@@ -22,6 +26,22 @@ import {
 } from "./Expr";
 
 export class PrettyPrinter implements Visitor<string> {
+    visitThisExpr(thisexpr: ThisExpr): string {
+        return "(this)";
+    }
+
+    visitSet(set: Set): string {
+        return `(set ${set.object.visit(this)} ${set.name.lexeme} ${set.value.visit(this)})`;
+    }
+
+    visitGet(get: Get): string {
+        return `(get ${get.object.visit(this)} ${get.name.lexeme})`;
+    }
+
+    visitClassStmt(classstmt: ClassStmt): string {
+        throw new Error("Method not implemented.");
+    }
+
     visitReturnStmt(returnstmt: ReturnStmt): string {
         return `(return ${returnstmt.value?.visit(this) || ""})`;
     }

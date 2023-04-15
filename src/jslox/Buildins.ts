@@ -1,4 +1,4 @@
-import { Callable } from "./Callable";
+import { Callable } from "./LoxFunction";
 import { Environment } from "./Environment";
 import { Interpreter, LoxType } from "./Interpreter";
 

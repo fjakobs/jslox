@@ -1,5 +1,5 @@
 import { Buildins } from "./Buildins";
-import { Callable, LoxFunction, ReturnException } from "./Callable";
+import { Callable, LoxFunction, ReturnException } from "./LoxFunction";
 import { Environment } from "./Environment";
 import { RuntimeError, defaultErrorReporter } from "./Error";
 import {
@@ -8,11 +8,14 @@ import {
     Block,
     BreakStmt,
     Call,
+    ClassStmt,
     ContinueStmt,
     Expr,
     Expression,
     ForStmt,
     FunctionStmt,
+    Get,
+    Set,
     Grouping,
     IfStmt,
     Literal,
@@ -25,10 +28,13 @@ import {
     VariableDeclaration,
     Visitor,
     WhileStmt,
+    ThisExpr,
 } from "./Expr";
+import { LoxClass } from "./LoxClass";
+import { LoxInstance } from "./LoxInstance";
 import { Token } from "./Token";
 
-export type LoxType = null | number | string | boolean | Callable;
+export type LoxType = null | number | string | boolean | Callable | LoxInstance | LoxClass;
 
 export class BreakException extends Error {}
 export class ContinueException extends Error {}
@@ -109,6 +115,43 @@ export class Interpreter implements Visitor<LoxType> {
         return null;
     }
 
+    visitClassStmt(classstmt: ClassStmt): LoxType {
+        let superclass: LoxType = null;
+
+        // if (classstmt.superclass) {
+        //     superclass = classstmt.superclass.visit(this);
+        //     if (!(superclass instanceof LoxClass)) {
+        //         throw new RuntimeError(classstmt.superclass.name, "Superclass must be a class.");
+        //     }
+        // }
+
+        this._environment.define(classstmt.name.lexeme, null);
+
+        // if (classstmt.superclass) {
+        //     this._environment = new Environment(this._environment);
+        //     this._environment.define("super", superclass);
+        // }
+
+        const methods: Map<string, LoxFunction> = new Map();
+        for (const method of classstmt.methods) {
+            const func = new LoxFunction(method, this._environment, method.name.lexeme === "init");
+            methods.set(method.name.lexeme, func);
+        }
+
+        const klass = new LoxClass(classstmt.name.lexeme, methods);
+
+        // if (superclass) {
+        //     this._environment = this._environment.enclosing;
+        // }
+
+        this._environment.assign(classstmt.name, klass);
+        return null;
+    }
+
+    visitThisExpr(thisexpr: ThisExpr): LoxType {
+        return this.lookupVariable(thisexpr.keyword, thisexpr);
+    }
+
     visitFunctionStmt(functiondecl: FunctionStmt): LoxType {
         this._environment.define(functiondecl.name.lexeme, new LoxFunction(functiondecl, this._environment));
         return null;
@@ -116,6 +159,25 @@ export class Interpreter implements Visitor<LoxType> {
 
     visitReturnStmt(returnstmt: ReturnStmt): LoxType {
         throw new ReturnException(returnstmt?.value?.visit(this) || null);
+    }
+
+    visitGet(get: Get): LoxType {
+        const object = get.object.visit(this);
+        if (object instanceof LoxInstance) {
+            return object.get(get.name);
+        }
+
+        throw new RuntimeError(get.name, "Only instances have properties.");
+    }
+
+    visitSet(set: Set): LoxType {
+        const object = set.object.visit(this);
+        if (object instanceof LoxInstance) {
+            object.set(set.name, set.value.visit(this));
+            return null;
+        }
+
+        throw new RuntimeError(set.name, "Only instances have fields.");
     }
 
     visitCall(call: Call): LoxType {
@@ -202,7 +264,7 @@ export class Interpreter implements Visitor<LoxType> {
     }
 
     visitVariable(variable: Variable): LoxType {
-        return this.lookUpVariable(variable.name, variable);
+        return this.lookupVariable(variable.name, variable);
     }
 
     visitVariableDeclaration(variabledeclaration: VariableDeclaration): LoxType {
@@ -322,7 +384,7 @@ export class Interpreter implements Visitor<LoxType> {
         }
     }
 
-    private lookUpVariable(name: Token, expr: Expr): LoxType {
+    private lookupVariable(name: Token, expr: Expr): LoxType {
         const distance = this.locals.get(expr);
 
         if (distance !== undefined) {

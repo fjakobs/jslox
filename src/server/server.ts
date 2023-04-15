@@ -14,6 +14,7 @@ import {
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { LoxLspServer } from "./LoxLspServer";
+import { TOKEN_LEGEND } from "./SemanticTokenAnalyzer";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -54,7 +55,7 @@ connection.onInitialize((params: InitializeParams) => {
         console.log(capabilities.textDocument?.semanticTokens);
         result.capabilities.semanticTokensProvider = {
             legend: {
-                tokenTypes: LoxLspServer.tokenLegend,
+                tokenTypes: TOKEN_LEGEND.concat(),
                 tokenModifiers: [],
             },
             range: false,
