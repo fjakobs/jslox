@@ -37,6 +37,8 @@ export class Resolver implements Visitor<void> {
     // map of variable name to token where it is declared
     readonly references: Map<Token, Token> = new Map();
 
+    readonly definitionType: Map<Token, "parameter" | "function" | "class"> = new Map();
+
     private currentFunction: FunctionType = "none";
     private loopDepth = 0;
 
@@ -101,6 +103,7 @@ export class Resolver implements Visitor<void> {
     visitFunctionStmt(functionstmt: FunctionStmt) {
         this.declare(functionstmt.name);
         this.define(functionstmt.name);
+        this.definitionType.set(functionstmt.name, "function");
 
         this.resolveFunction(functionstmt, "function");
     }
@@ -199,6 +202,8 @@ export class Resolver implements Visitor<void> {
         functionstmt.params.forEach((param) => {
             this.declare(param);
             this.define(param);
+
+            this.definitionType.set(param, "parameter");
         });
         functionstmt.body.forEach((statement) => statement.visit(this));
         this.endScope();

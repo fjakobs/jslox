@@ -7,6 +7,8 @@ import {
     Location,
     Position,
     PublishDiagnosticsParams,
+    SemanticTokens,
+    SemanticTokensBuilder,
     TextDocuments,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -15,12 +17,14 @@ import { Scanner } from "../jslox/Scanner";
 import { Parser } from "../jslox/Parser";
 import { Resolver } from "../jslox/Resolver";
 import { Token } from "../jslox/Token";
+import { SemanticToken, SemanticTokenAnalyzer } from "./SemanticTokenAnalyzer";
 
 export class LoxDocument {
     public diagnostics: Diagnostic[] = [];
     public hadError: boolean = false;
     public definitions: Map<Token, Token[]> = new Map();
     public references: Map<Token, Token> = new Map();
+    public semanticTokens: SemanticToken[] = [];
 
     constructor(public document: TextDocument) {}
 
@@ -28,6 +32,8 @@ export class LoxDocument {
         const source = this.document.getText();
 
         this.diagnostics = [];
+        this.semanticTokens = [];
+
         this.hadError = false;
         const reporter: ErrorReporter = {
             error: (token: Token, message: string) => {
@@ -69,6 +75,10 @@ export class LoxDocument {
         const resolver = new Resolver(reporter);
         resolver.resolve(statements);
 
+        if (statements && !this.hadError) {
+            this.semanticTokens = new SemanticTokenAnalyzer().analyze(statements, resolver);
+        }
+
         this.definitions = resolver.definitions;
         this.references = resolver.references;
     }
@@ -79,6 +89,11 @@ type LspEventListner = ((type: "diagnostics", params: PublishDiagnosticsParams) 
 
 export class LoxLspServer {
     loxDocuments: Map<string, LoxDocument> = new Map();
+    static tokenLegend = ["class", "function", "variable"];
+    static tokenToId = this.tokenLegend.reduce((map, token, index) => {
+        map[token] = index;
+        return map;
+    }, {} as { [key: string]: number });
 
     constructor(private documents: TextDocuments<TextDocument>, private listener: LspEventListner) {
         this.documents.onDidChangeContent((change) => {
@@ -154,5 +169,22 @@ export class LoxLspServer {
             }
         }
         return null;
+    }
+
+    onSemanticTokens(uri: string): HandlerResult<SemanticTokens, void> {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument || !loxDocument.semanticTokens) {
+            return { data: [] };
+        }
+
+        const builder = new SemanticTokensBuilder();
+        for (const token of loxDocument.semanticTokens) {
+            const { line, character } = loxDocument.document.positionAt(token.start);
+            const length = token.end - token.start;
+            const typeId = LoxLspServer.tokenToId[token.type];
+            builder.push(line, character, length, typeId, 0);
+        }
+
+        return builder.build();
     }
 }

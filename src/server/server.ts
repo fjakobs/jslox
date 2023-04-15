@@ -33,22 +33,14 @@ const loxServer = new LoxLspServer(documents, (type, params) => {
     }
 });
 
-let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
+let hasSemanticTokensCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
     const capabilities = params.capabilities;
 
-    // Does the client support the `workspace/configuration` request?
-    // If not, we fall back using global settings.
-    hasConfigurationCapability = !!(capabilities.workspace && !!capabilities.workspace.configuration);
     hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders);
-    hasDiagnosticRelatedInformationCapability = !!(
-        capabilities.textDocument &&
-        capabilities.textDocument.publishDiagnostics &&
-        capabilities.textDocument.publishDiagnostics.relatedInformation
-    );
+    hasSemanticTokensCapability = !!capabilities.textDocument?.semanticTokens?.requests?.full;
 
     const result: InitializeResult = {
         capabilities: {
@@ -57,6 +49,19 @@ connection.onInitialize((params: InitializeParams) => {
             referencesProvider: true,
         },
     };
+
+    if (hasSemanticTokensCapability) {
+        console.log(capabilities.textDocument?.semanticTokens);
+        result.capabilities.semanticTokensProvider = {
+            legend: {
+                tokenTypes: LoxLspServer.tokenLegend,
+                tokenModifiers: [],
+            },
+            range: false,
+            full: true,
+        };
+    }
+
     if (hasWorkspaceFolderCapability) {
         result.capabilities.workspace = {
             workspaceFolders: {
@@ -75,16 +80,16 @@ connection.onInitialized(() => {
     }
 });
 
-documents.onDidChangeContent((change) => {
-    loxServer.onDidChangeContent(change.document.uri);
-});
-
 connection.onDefinition((params: TextDocumentPositionParams) => {
     return loxServer.onDefinition(params.textDocument.uri, params.position);
 });
 
 connection.onReferences((params: TextDocumentPositionParams) => {
     return loxServer.onReferences(params.textDocument.uri, params.position);
+});
+
+connection.languages.semanticTokens.on((params) => {
+    return loxServer.onSemanticTokens(params.textDocument.uri);
 });
 
 documents.listen(connection);
