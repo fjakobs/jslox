@@ -3,12 +3,14 @@ import {
     DefinitionLink,
     Diagnostic,
     DiagnosticSeverity,
+    DocumentSymbol,
     HandlerResult,
     Location,
     Position,
     PublishDiagnosticsParams,
     SemanticTokens,
     SemanticTokensBuilder,
+    SymbolInformation,
     TextDocuments,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -25,6 +27,7 @@ export class LoxDocument {
     public definitions: Map<Token, Token[]> = new Map();
     public references: Map<Token, Token> = new Map();
     public semanticTokens: SemanticToken[] = [];
+    public documentSymbols?: DocumentSymbol[];
 
     constructor(public document: TextDocument) {}
 
@@ -76,7 +79,10 @@ export class LoxDocument {
         resolver.resolve(statements);
 
         if (statements && !this.hadError) {
-            this.semanticTokens = new SemanticTokenAnalyzer().analyze(statements, resolver);
+            const analyzer = new SemanticTokenAnalyzer();
+            analyzer.analyze(statements, resolver);
+            this.semanticTokens = analyzer.tokens;
+            this.documentSymbols = analyzer.documentSymbols;
         }
 
         this.definitions = resolver.definitions;
@@ -183,5 +189,14 @@ export class LoxLspServer {
         }
 
         return builder.build();
+    }
+
+    onDocumentSymbol(uri: string): HandlerResult<SymbolInformation[] | DocumentSymbol[] | null | undefined, void> {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument || !loxDocument.documentSymbols) {
+            return [];
+        }
+
+        return loxDocument.documentSymbols;
     }
 }

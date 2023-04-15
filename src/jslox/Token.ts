@@ -56,6 +56,7 @@ export class Token {
         readonly lexeme: string,
         readonly literal: string | number | boolean | undefined,
         readonly line: number,
+        readonly character: number,
         readonly start: number,
         readonly end: number
     ) {}

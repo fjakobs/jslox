@@ -36,12 +36,14 @@ const loxServer = new LoxLspServer(documents, (type, params) => {
 
 let hasWorkspaceFolderCapability = false;
 let hasSemanticTokensCapability = false;
+let hasSymbolProviderCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
     const capabilities = params.capabilities;
 
     hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders);
     hasSemanticTokensCapability = !!capabilities.textDocument?.semanticTokens?.requests?.full;
+    hasSymbolProviderCapability = !!capabilities.textDocument?.documentSymbol?.hierarchicalDocumentSymbolSupport;
 
     const result: InitializeResult = {
         capabilities: {
@@ -50,6 +52,11 @@ connection.onInitialize((params: InitializeParams) => {
             referencesProvider: true,
         },
     };
+
+    if (hasSymbolProviderCapability) {
+        console.log(capabilities.textDocument?.semanticTokens);
+        result.capabilities.documentSymbolProvider = true;
+    }
 
     if (hasSemanticTokensCapability) {
         console.log(capabilities.textDocument?.semanticTokens);
@@ -87,6 +94,10 @@ connection.onDefinition((params: TextDocumentPositionParams) => {
 
 connection.onReferences((params: TextDocumentPositionParams) => {
     return loxServer.onReferences(params.textDocument.uri, params.position);
+});
+
+connection.onDocumentSymbol((params) => {
+    return loxServer.onDocumentSymbol(params.textDocument.uri);
 });
 
 connection.languages.semanticTokens.on((params) => {

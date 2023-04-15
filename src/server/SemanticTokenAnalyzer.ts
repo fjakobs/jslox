@@ -1,3 +1,4 @@
+import { DocumentSymbol, SymbolKind } from "vscode-languageserver";
 import {
     Assign,
     Binary,
@@ -42,12 +43,18 @@ export interface SemanticToken {
 }
 
 export class SemanticTokenAnalyzer implements Visitor<void> {
-    private tokens: Array<SemanticToken> = [];
-    private resolver?: Resolver;
+    public tokens: Array<SemanticToken> = [];
+    public documentSymbols: Array<DocumentSymbol> = [];
 
-    analyze(statemens: Stmt[], resolver: Resolver): SemanticToken[] {
+    private resolver?: Resolver;
+    private currentSymbol?: DocumentSymbol;
+
+    analyze(statemens: Stmt[], resolver: Resolver) {
         this.resolver = resolver;
         this.tokens = [];
+        this.documentSymbols = [];
+        this.currentSymbol = undefined;
+
         for (const statement of statemens) {
             statement.visit(this);
         }
@@ -119,14 +126,25 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
             type: "class",
         });
 
+        const enclosingSymbol = this.startBlock({
+            name: classstmt.name.lexeme,
+            kind: SymbolKind.Class,
+            range: {
+                start: classstmt.name,
+                end: classstmt.name,
+            },
+            selectionRange: {
+                start: classstmt.name,
+                end: classstmt.name,
+            },
+            children: [],
+        });
+
         for (const method of classstmt.methods) {
             method.visit(this);
-            this.tokens.push({
-                start: method.name.start,
-                end: method.name.end,
-                type: "property",
-            });
         }
+
+        this.endBlock(enclosingSymbol);
     }
 
     visitGet(get: Get): void {
@@ -152,10 +170,26 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
     visitThisExpr(thisexpr: ThisExpr): void {}
 
     visitFunctionStmt(functionstmt: FunctionStmt): void {
+        const isMethod = this.currentSymbol?.kind === SymbolKind.Class;
+
         this.tokens.push({
             start: functionstmt.name.start,
             end: functionstmt.name.end,
-            type: "function",
+            type: isMethod ? "property" : "function",
+        });
+
+        const enclosingSymbol = this.startBlock({
+            name: functionstmt.name.lexeme,
+            kind: isMethod ? SymbolKind.Method : SymbolKind.Function,
+            range: {
+                start: functionstmt.name,
+                end: functionstmt.name,
+            },
+            selectionRange: {
+                start: functionstmt.name,
+                end: functionstmt.name,
+            },
+            children: [],
         });
 
         for (const param of functionstmt.params) {
@@ -166,6 +200,8 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
             });
         }
         functionstmt.body.forEach((stmt) => stmt.visit(this));
+
+        this.endBlock(enclosingSymbol);
     }
 
     visitBreakStmt(breakstmt: BreakStmt): void {}
@@ -208,5 +244,23 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
             type: "variable",
         });
         variabledeclaration.initializer?.visit(this);
+    }
+
+    private startBlock(newSymbol: DocumentSymbol) {
+        const enclosingSymbol = this.currentSymbol;
+        this.currentSymbol = newSymbol;
+
+        return enclosingSymbol;
+    }
+
+    private endBlock(enclosingSymbol: DocumentSymbol | undefined) {
+        if (this.currentSymbol) {
+            if (enclosingSymbol) {
+                enclosingSymbol.children?.push(this.currentSymbol);
+            } else {
+                this.documentSymbols.push(this.currentSymbol);
+            }
+        }
+        this.currentSymbol = enclosingSymbol;
     }
 }

@@ -26,6 +26,7 @@ export class Scanner {
     private start = 0;
     private current = 0;
     private line = 1;
+    private character = 0;
 
     constructor(private readonly source: string, readonly errorReporter: ErrorReporter = defaultErrorReporter) {}
 
@@ -35,7 +36,7 @@ export class Scanner {
             yield* this.scanToken();
         }
 
-        yield new Token("EOF", "", undefined, this.line, this.start, this.current);
+        yield new Token("EOF", "", undefined, this.line, this.character, this.start, this.current);
     }
 
     private isAtEnd(): boolean {
@@ -104,6 +105,7 @@ export class Scanner {
 
             case "\n":
                 this.line++;
+                this.character = 0;
                 break;
 
             case '"':
@@ -130,6 +132,7 @@ export class Scanner {
     }
 
     private advance() {
+        this.character++;
         return this.source.charAt(this.current++);
     }
 
@@ -156,6 +159,7 @@ export class Scanner {
             return false;
         }
 
+        this.character++;
         this.current++;
         return true;
     }
@@ -180,6 +184,7 @@ export class Scanner {
         while (this.peek() !== '"' && !this.isAtEnd()) {
             if (this.peek() === "\n") {
                 this.line++;
+                this.character = 0;
             }
             this.advance();
         }
@@ -230,6 +235,6 @@ export class Scanner {
 
     private makeToken(type: TokenType, literal?: string | number | boolean): Token {
         const text = this.source.substring(this.start, this.current);
-        return new Token(type, text, literal, this.line, this.start, this.current);
+        return new Token(type, text, literal, this.line, this.character, this.start, this.current);
     }
 }
