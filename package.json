@@ -1,8 +1,10 @@
 {
-    "name": "jslox",
-    "displayName": "jslox",
-    "description": "Language support for the lox language",
+    "name": "lox-lsp",
+    "displayName": "Lox LSP",
+    "description": "LSP server for the lox language",
     "version": "0.0.1",
+    "publisher": "fjakobs",
+    "license": "Apache-2.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/fjakobs/jslox"
@@ -11,17 +13,13 @@
         "vscode": "^1.77.0"
     },
     "categories": [
-        "Other"
+        "Programming Languages"
     ],
-    "activationEvents": [],
+    "activationEvents": [
+        "onLanguage:lox"
+    ],
     "main": "./out/extension.js",
     "contributes": {
-        "commands": [
-            {
-                "command": "jslox.helloWorld",
-                "title": "Hello World"
-            }
-        ],
         "languages": [
             {
                 "id": "lox",
@@ -49,11 +47,13 @@
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",
         "pretest": "npm run compile && npm run lint",
-        "lint": "eslint src --ext ts",
-        "test": "node ./out/test/runTest.js",
+        "fix": "prettier --write '**/*.{ts,js,json,md}'",
+        "lint": "eslint src --ext ts && prettier --check '**/*.{ts,js,json,md}'",
+        "test": "npm run lox:test && npm run ext:test",
+        "ext:test": "node ./out/test/runTest.js",
         "lox": "ts-node src/jslox/main.ts",
         "lox:generate": "ts-node src/jslox/astGenerator.ts > src/jslox/Expr.ts",
-        "test:lox": "ts-mocha 'src/jslox/**/*.test.ts'"
+        "lox:test": "ts-mocha 'src/jslox/**/*.test.ts'"
     },
     "devDependencies": {
         "@types/glob": "^8.1.0",

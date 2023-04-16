@@ -1,0 +1,29 @@
+name: Publish nightly release
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    create-build-artifacts:
+        uses: ./.github/workflows/create-build-artifacts.yml
+        secrets: inherit
+        with:
+            release_tag: main
+
+    create-release:
+        needs: "create-build-artifacts"
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/download-artifact@v3
+
+            - run: ls -lR
+
+            - name: Update nightly release
+              uses: pyTooling/Actions/releaser@r0
+              with:
+                  tag: nightly
+                  rm: true
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: "lox-lsp/*.vsix"
