@@ -58,9 +58,9 @@ jobs:
             - name: Install ovsx
               run: npm install -g ovsx
 
-            - name: Publish to Open VSIX
-              run: |
-                  ovsx verify-pat fjakobs
-                  ovsx publish --packagePath lox-lsp*.vsix --skip-duplicate
-              env:
-                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
+            # - name: Publish to Open VSIX
+            #   run: |
+            #       ovsx verify-pat fjakobs
+            #       ovsx publish --packagePath lox-lsp*.vsix --skip-duplicate
+            #   env:
+            #       OVSX_PAT: ${{ secrets.OVSX_PAT }}
