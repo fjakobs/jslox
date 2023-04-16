@@ -1,3 +1,4 @@
+// Super awesome animal class
 class Animal {
     init(name) {
         print("Animal init");
@@ -22,3 +23,5 @@ class Dog < Animal {
 
 print Animal("Anton").sayHi();
 print Dog("Fido").sayHi();
+
+print 12.4 + 5;

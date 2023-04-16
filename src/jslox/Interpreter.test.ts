@@ -9,13 +9,9 @@ import exp = require("constants");
 
 export const testErrorReporter: ErrorReporter = {
     error: (token: TokenPosition, message: string) => {
-        console.error(`[line ${token.line}] Error: ${message}`);
         assert.fail(message);
     },
-    warn: (token: TokenPosition, message: string) => {
-        console.warn(`[line ${token.line}] Warning: ${message}`);
-        assert.fail(message);
-    },
+    warn: (token: TokenPosition, message: string) => {},
     runtimeError: function (error: RuntimeError): void {
         console.error(error.message);
         assert.fail(error.message);
