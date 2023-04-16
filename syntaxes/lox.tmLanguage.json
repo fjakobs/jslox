@@ -8,6 +8,12 @@
         },
         {
             "include": "#strings"
+        },
+        {
+            "include": "#numbers"
+        },
+        {
+            "include": "#comments"
         }
     ],
     "repository": {
@@ -15,23 +21,51 @@
             "patterns": [
                 {
                     "name": "keyword.control.lox",
-                    "match": "\\b(else|for|if|while)\\b"
+                    "match": "\\b(else|for|if|while|break|continue|return)\\b"
                 },
                 {
                     "name": "keyword.operator.lox",
                     "match": "\\b(and|or|\\!)\\b"
                 },
                 {
-                    "name": "constant.language.lox",
-                    "match": "\\b(true|false|nil)\\b"
+                    "name": "constant.language.null.lox",
+                    "match": "\\b(nil)\\b"
                 },
                 {
-                    "match": "(?<![\\w\\d.])\\.\\d+",
-                    "name": "constant.numeric.lua"
+                    "name": "constant.language.boolean.lox",
+                    "match": "\\b(true|false)\\b"
                 },
                 {
-                    "name": "keyword.other.lox",
-                    "match": "\\b(class|fun|print|return|super|this|var|break|continue)\\b"
+                    "name": "variable.language.super.lox",
+                    "match": "\\b(super)\\b"
+                },
+                {
+                    "name": "variable.language.this.lox",
+                    "match": "\\b(this)\\b"
+                },
+                {
+                    "name": "variable.function.buildin.lox",
+                    "match": "\\b(print|clock)\\b"
+                },
+                {
+                    "name": "storage.type.class.lox",
+                    "match": "\\b(class)\\b"
+                },
+                {
+                    "name": "storage.type.function.lox",
+                    "match": "\\b(fun)\\b"
+                },
+                {
+                    "name": "storage.type.lox",
+                    "match": "\\b(var)\\b"
+                }
+            ]
+        },
+        "numbers": {
+            "patterns": [
+                {
+                    "match": "\\b[0-9]+(?:.[0-9]+)?\\b",
+                    "name": "constant.numeric.lox"
                 }
             ]
         },
@@ -43,6 +77,14 @@
                 {
                     "name": "constant.character.escape.lox",
                     "match": "\\\\."
+                }
+            ]
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name": "comment.line.double-slash.lox",
+                    "match": "\\/\\/.*"
                 }
             ]
         }
