@@ -25,12 +25,13 @@ import {
     Visitor,
     WhileStmt,
     ThisExpr,
+    SuperExpr,
 } from "./Expr";
 import { Token } from "./Token";
 import { ErrorReporter, defaultErrorReporter } from "./Error";
 
 export type FunctionType = "none" | "function" | "initializer" | "method";
-export type ClassType = "none" | "class";
+export type ClassType = "none" | "class" | "subclass";
 
 export class Resolver implements Visitor<void> {
     private scopes: Array<Map<string, false | Token>> = [new Map()];
@@ -115,12 +116,34 @@ export class Resolver implements Visitor<void> {
         expression.expression.visit(this);
     }
 
+    visitSuperExpr(superexpr: SuperExpr): void {
+        if (this.currentClass === "none") {
+            this.errorReporter.error(superexpr.keyword, "Cannot use 'super' outside of a class.");
+        } else if (this.currentClass !== "subclass") {
+            this.errorReporter.error(superexpr.keyword, "Cannot use 'super' in a class with no superclass.");
+        }
+
+        this.resolveLocal(superexpr, superexpr.keyword);
+    }
+
     visitClassStmt(classstmt: ClassStmt): void {
         const enclosingClass = this.currentClass;
         this.currentClass = "class";
 
         this.declare(classstmt.name);
         this.define(classstmt.name);
+        if (classstmt.superclass !== null) {
+            this.currentClass = "subclass";
+            if (classstmt.name.lexeme === classstmt.superclass.name.lexeme) {
+                this.errorReporter.error(classstmt.superclass.name, "A class cannot inherit from itself.");
+            }
+            classstmt.superclass.visit(this);
+        }
+
+        if (classstmt.superclass !== null) {
+            this.beginScope();
+            this.scopes[this.scopes.length - 1].set("super", classstmt.superclass.name);
+        }
 
         this.beginScope();
         this.scopes[this.scopes.length - 1].set("this", classstmt.name);
@@ -135,6 +158,11 @@ export class Resolver implements Visitor<void> {
         });
 
         this.endScope();
+
+        if (classstmt.superclass !== null) {
+            this.endScope();
+        }
+
         this.definitionType.set(classstmt.name, "class");
         this.currentClass = enclosingClass;
     }

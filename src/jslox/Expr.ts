@@ -19,6 +19,7 @@ export interface Visitor<R> {
     visitCall(call: Call): R;
     visitGet(get: Get): R;
     visitSet(set: Set): R;
+    visitSuperExpr(superexpr: SuperExpr): R;
     visitThisExpr(thisexpr: ThisExpr): R;
     visitExpression(expression: Expression): R;
     visitFunctionStmt(functionstmt: FunctionStmt): R;
@@ -59,7 +60,7 @@ export class Grouping implements Expr {
 }
 
 export class Literal implements Expr {
-    constructor(readonly value: string|number|null|boolean) {}
+    constructor(readonly value: string | number | null | boolean) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitLiteral(this);
@@ -114,6 +115,14 @@ export class Set implements Expr {
     }
 }
 
+export class SuperExpr implements Expr {
+    constructor(readonly keyword: Token, readonly method: Token) {}
+
+    visit<R>(visitor: Visitor<R>): R {
+        return visitor.visitSuperExpr(this);
+    }
+}
+
 export class ThisExpr implements Expr {
     constructor(readonly keyword: Token) {}
 
@@ -139,7 +148,7 @@ export class FunctionStmt implements Stmt {
 }
 
 export class ClassStmt implements Stmt {
-    constructor(readonly name: Token, readonly methods: Array<FunctionStmt>) {}
+    constructor(readonly name: Token, readonly superclass: Variable | null, readonly methods: Array<FunctionStmt>) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitClassStmt(this);
@@ -163,7 +172,7 @@ export class ContinueStmt implements Stmt {
 }
 
 export class IfStmt implements Stmt {
-    constructor(readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch: Stmt|null) {}
+    constructor(readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch: Stmt | null) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitIfStmt(this);
@@ -187,7 +196,7 @@ export class PrintStmt implements Stmt {
 }
 
 export class ReturnStmt implements Stmt {
-    constructor(readonly keyword: Token, readonly value: Expr|null) {}
+    constructor(readonly keyword: Token, readonly value: Expr | null) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitReturnStmt(this);
@@ -203,7 +212,12 @@ export class WhileStmt implements Stmt {
 }
 
 export class ForStmt implements Stmt {
-    constructor(readonly initializer: Stmt|null, readonly condition: Expr|null, readonly increment: Expr|null, readonly body: Stmt) {}
+    constructor(
+        readonly initializer: Stmt | null,
+        readonly condition: Expr | null,
+        readonly increment: Expr | null,
+        readonly body: Stmt
+    ) {}
 
     visit<R>(visitor: Visitor<R>): R {
         return visitor.visitForStmt(this);
@@ -217,5 +231,3 @@ export class VariableDeclaration implements Stmt {
         return visitor.visitVariableDeclaration(this);
     }
 }
-
-

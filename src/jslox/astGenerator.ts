@@ -10,11 +10,12 @@ const grammar: Record<string, Array<string>> = {
     "Call Expr": ["Expr callee", "Token paren", "Array<Expr> args"],
     "Get Expr": ["Expr object", "Token name"],
     "Set Expr": ["Expr object", "Token name", "Expr value"],
+    "SuperExpr Expr": ["Token keyword", "Token method"],
     "ThisExpr Expr": ["Token keyword"],
 
     "Expression Stmt": ["Expr expression"],
     "FunctionStmt Stmt": ["Token name", "Array<Token> params", "Array<Stmt> body"],
-    "ClassStmt Stmt": ["Token name", "Array<FunctionStmt> methods"],
+    "ClassStmt Stmt": ["Token name", "Variable|null superclass", "Array<FunctionStmt> methods"],
     "BreakStmt Stmt": ["Token keyword"],
     "ContinueStmt Stmt": ["Token keyword"],
     "IfStmt Stmt": ["Expr condition", "Stmt thenBranch", "Stmt|null elseBranch"],

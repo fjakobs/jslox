@@ -9,6 +9,16 @@ class Animal {
     }
 }
 
-var anton = Animal("Anton");
-print anton.name;
-print anton.sayHi();
+class Dog < Animal {
+    init(name) {
+        print("Dog init");
+        super.init(name);
+    }
+    
+    sayHi() {
+        return "Woof " + this.name;
+    }
+}
+
+print Animal("Anton").sayHi();
+print Dog("Fido").sayHi();

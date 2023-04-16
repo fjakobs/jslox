@@ -17,6 +17,7 @@ import {
     PrintStmt,
     ReturnStmt,
     Set,
+    SuperExpr,
     ThisExpr,
     Unary,
     Variable,
@@ -26,6 +27,10 @@ import {
 } from "./Expr";
 
 export class PrettyPrinter implements Visitor<string> {
+    visitSuperExpr(superexpr: SuperExpr): string {
+        return `(super ${superexpr.method.lexeme})`;
+    }
+
     visitThisExpr(thisexpr: ThisExpr): string {
         return "(this)";
     }

@@ -19,6 +19,7 @@ import {
     ReturnStmt,
     Set,
     Stmt,
+    SuperExpr,
     ThisExpr,
     Unary,
     Variable,
@@ -119,12 +120,24 @@ export class SemanticTokenAnalyzer implements Visitor<void> {
         expression.expression.visit(this);
     }
 
+    visitSuperExpr(superexpr: SuperExpr): void {}
+
     visitClassStmt(classstmt: ClassStmt): void {
         this.tokens.push({
             start: classstmt.name.start,
             end: classstmt.name.end,
             type: "class",
         });
+
+        if (classstmt.superclass) {
+            classstmt.superclass.visit(this);
+
+            this.tokens.push({
+                start: classstmt.superclass.name.start,
+                end: classstmt.superclass.name.end,
+                type: "class",
+            });
+        }
 
         const enclosingSymbol = this.startBlock({
             name: classstmt.name.lexeme,

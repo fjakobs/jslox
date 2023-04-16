@@ -3,7 +3,7 @@ import { Interpreter, LoxType } from "./Interpreter";
 import { LoxInstance } from "./LoxInstance";
 
 export class LoxClass extends Callable {
-    constructor(public name: string, public methods: Map<string, LoxFunction>) {
+    constructor(public name: string, readonly superclass: LoxClass | null, readonly methods: Map<string, LoxFunction>) {
         super();
     }
 
@@ -18,6 +18,10 @@ export class LoxClass extends Callable {
     findMethod(lexeme: string): LoxFunction | undefined {
         if (this.methods.has(lexeme)) {
             return this.methods.get(lexeme);
+        }
+
+        if (this.superclass) {
+            return this.superclass.findMethod(lexeme);
         }
 
         return;

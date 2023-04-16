@@ -24,6 +24,7 @@ import {
     VariableDeclaration,
     WhileStmt,
     ThisExpr,
+    SuperExpr,
 } from "./Expr";
 import { Token, TokenType } from "./Token";
 
@@ -101,11 +102,11 @@ export class Parser {
     private classDeclaration(): Stmt {
         const name = this.consume("IDENTIFIER", "Expect class name.");
 
-        // let superclass: Variable | null = null;
-        // if (this.match("LESS")) {
-        //     this.consume("IDENTIFIER", "Expect superclass name.");
-        //     superclass = new Variable(this.previous);
-        // }
+        let superclass: Variable | null = null;
+        if (this.match("LESS")) {
+            this.consume("IDENTIFIER", "Expect superclass name.");
+            superclass = new Variable(this.previous!);
+        }
 
         this.consume("LEFT_BRACE", "Expect '{' before class body.");
 
@@ -116,7 +117,7 @@ export class Parser {
 
         this.consume("RIGHT_BRACE", "Expect '}' after class body.");
 
-        return new ClassStmt(name, methods);
+        return new ClassStmt(name, superclass, methods);
     }
 
     private functionDeclaration(kind: "function" | "method"): FunctionStmt {
@@ -440,6 +441,14 @@ export class Parser {
 
         if (this.match("THIS")) {
             return new ThisExpr(this.previous!);
+        }
+
+        if (this.match("SUPER")) {
+            const keyword = this.previous;
+            this.consume("DOT", "Expect '.' after 'super'.");
+
+            const method = this.consume("IDENTIFIER", "Expect superclass method name.");
+            return new SuperExpr(keyword!, method!);
         }
 
         throw this.error(this.current!, "Expect expression.");

@@ -29,6 +29,7 @@ import {
     Visitor,
     WhileStmt,
     ThisExpr,
+    SuperExpr,
 } from "./Expr";
 import { LoxClass } from "./LoxClass";
 import { LoxInstance } from "./LoxInstance";
@@ -115,22 +116,38 @@ export class Interpreter implements Visitor<LoxType> {
         return null;
     }
 
+    visitSuperExpr(superexpr: SuperExpr): LoxType {
+        const distance = this.locals.get(superexpr);
+        if (distance === undefined) {
+            throw new RuntimeError(superexpr.keyword, "Cannot use 'super' outside of a class.");
+        }
+        const superclass = this._environment.getAt(distance, "super") as LoxClass;
+        const object = this._environment.getAt(distance - 1, "this") as LoxInstance;
+
+        const method = superclass.findMethod(superexpr.method.lexeme);
+        if (!method) {
+            throw new RuntimeError(superexpr.method, `Undefined property '${superexpr.method.lexeme}'.`);
+        }
+
+        return method.bind(object);
+    }
+
     visitClassStmt(classstmt: ClassStmt): LoxType {
         let superclass: LoxType = null;
 
-        // if (classstmt.superclass) {
-        //     superclass = classstmt.superclass.visit(this);
-        //     if (!(superclass instanceof LoxClass)) {
-        //         throw new RuntimeError(classstmt.superclass.name, "Superclass must be a class.");
-        //     }
-        // }
+        if (classstmt.superclass) {
+            superclass = classstmt.superclass.visit(this);
+            if (!(superclass instanceof LoxClass)) {
+                throw new RuntimeError(classstmt.superclass.name, "Superclass must be a class.");
+            }
+        }
 
         this._environment.define(classstmt.name.lexeme, null);
 
-        // if (classstmt.superclass) {
-        //     this._environment = new Environment(this._environment);
-        //     this._environment.define("super", superclass);
-        // }
+        if (classstmt.superclass) {
+            this._environment = new Environment(this._environment);
+            this._environment.define("super", superclass);
+        }
 
         const methods: Map<string, LoxFunction> = new Map();
         for (const method of classstmt.methods) {
@@ -138,11 +155,11 @@ export class Interpreter implements Visitor<LoxType> {
             methods.set(method.name.lexeme, func);
         }
 
-        const klass = new LoxClass(classstmt.name.lexeme, methods);
+        const klass = new LoxClass(classstmt.name.lexeme, superclass, methods);
 
-        // if (superclass) {
-        //     this._environment = this._environment.enclosing;
-        // }
+        if (superclass) {
+            this._environment = this._environment.enclosing!;
+        }
 
         this._environment.assign(classstmt.name, klass);
         return null;
