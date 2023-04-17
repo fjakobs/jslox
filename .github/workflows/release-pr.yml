@@ -50,13 +50,8 @@ jobs:
             - name: Changelog
               id: create-changelog
               run: |
-                  npm install -g generate-changelog
-                  TMPFILE=$(mktemp /tmp/tmpfile.XXXX)
-                  generate-changelog ${{ inputs.version }} -f $TMPFILE
-
-                  cat $TMPFILE >> $GITHUB_STEP_SUMMARY
-
-                  echo "changelog_file=$TMPFILE" >> $GITHUB_OUTPUT
+                  ./node_modules/.bin/generate-changelog -a
+                  cat CHANGELOG.md >> $GITHUB_STEP_SUMMARY
 
             - name: lint fix
               if: ${{ inputs.version != '0.0.0' }}
@@ -69,7 +64,7 @@ jobs:
                   COMMIT_SHA=$(git rev-parse --short HEAD)
                   BRANCH=releases/draft-$COMMIT_SHA-$(date +%s)
                   git checkout -b $BRANCH
-                  git add  CHANGELOG.md package.json
+                  git add CHANGELOG.md package.json package-lock.json
                   git status
                   git commit -m "Release: v${{ inputs.version }}"
                   git push origin HEAD
@@ -78,7 +73,6 @@ jobs:
             - name: Create PR
               if: ${{ inputs.version != '0.0.0' }}
               run: |
-                  gh pr create -B main -H ${{ steps.create-branch.outputs.branch_name }} --title "Release: v${{ inputs.version }}" --body-file ${{ steps.create-changelog.outputs.changelog_file }}
-                  rm ${{ steps.create-changelog.outputs.changelog_file }}
+                  gh pr create -B main -H ${{ steps.create-branch.outputs.branch_name }} --title "Release: v${{ inputs.version }}" --body-file CHANGELOG.md
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

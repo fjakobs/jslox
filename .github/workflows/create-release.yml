@@ -1,4 +1,4 @@
-name: Create Draft Release
+name: Create Release
 
 on:
     push:
@@ -56,8 +56,8 @@ jobs:
                   tmpfile=$(mktemp /tmp/commit-message.XXXXX)
                   echo "${{ needs.prepare-release.outputs.changelog }}" > $tmpfile
                   cat $tmpfile >> $GITHUB_STEP_SUMMARY
-                  gh release create release-v$RELEASE_VERSION ${{ steps.download.outputs.download-path }}/lox-lsp/*.vsix \
-                      -d --target main -t "$TITLE" -F $tmpfile --repo fjakobs/jslox
+                  gh release create v$RELEASE_VERSION ${{ steps.download.outputs.download-path }}/lox-lsp/*.vsix \
+                    --target main -t "$TITLE" -F $tmpfile --repo fjakobs/jslox
 
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

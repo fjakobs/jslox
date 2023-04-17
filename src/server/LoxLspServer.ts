@@ -8,10 +8,13 @@ import {
     Location,
     Position,
     PublishDiagnosticsParams,
+    Range,
     SemanticTokens,
     SemanticTokensBuilder,
     SymbolInformation,
     TextDocuments,
+    TextEdit,
+    WorkspaceEdit,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { ErrorReporter } from "../jslox/Error";
@@ -198,5 +201,87 @@ export class LoxLspServer {
         }
 
         return loxDocument.documentSymbols;
+    }
+
+    onRename(uri: string, position: Position, newName: string): HandlerResult<WorkspaceEdit | null | undefined, void> {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument || !loxDocument.definitions) {
+            return null;
+        }
+
+        const offset = loxDocument.document.offsetAt(position);
+        let definition: Token | undefined = undefined;
+        for (const [def, references] of loxDocument.definitions) {
+            if (def.start <= offset && def.end >= offset) {
+                definition = def;
+                break;
+            }
+
+            for (const reference of references || []) {
+                if (reference.start <= offset && reference.end >= offset) {
+                    definition = def;
+                    break;
+                }
+            }
+        }
+        if (!definition) {
+            return null;
+        }
+
+        const edits: Array<TextEdit> = [definition]
+            .concat(loxDocument.definitions.get(definition) || [])
+            .map((token) => {
+                return {
+                    range: {
+                        start: loxDocument.document.positionAt(token.start),
+                        end: loxDocument.document.positionAt(token.end),
+                    },
+                    newText: newName,
+                };
+            });
+
+        return {
+            changes: {
+                [uri]: edits,
+            },
+        };
+    }
+
+    onPrepareRename(
+        uri: string,
+        position: Position
+    ): HandlerResult<
+        Range | { range: Range; placeholder: string } | { defaultBehavior: boolean } | null | undefined,
+        void
+    > {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument || !loxDocument.definitions) {
+            return null;
+        }
+
+        const offset = loxDocument.document.offsetAt(position);
+        for (const definition of loxDocument.definitions.keys()) {
+            if (definition.start <= offset && definition.end >= offset) {
+                return {
+                    range: {
+                        start: definition,
+                        end: loxDocument.document.positionAt(definition.end),
+                    },
+                    placeholder: definition.lexeme,
+                };
+            }
+            for (const reference of loxDocument.definitions.get(definition) || []) {
+                if (reference.start <= offset && reference.end >= offset) {
+                    return {
+                        range: {
+                            start: reference,
+                            end: loxDocument.document.positionAt(reference.end),
+                        },
+                        placeholder: reference.lexeme,
+                    };
+                }
+            }
+        }
+        return null;
     }
 }

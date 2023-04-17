@@ -55,9 +55,8 @@ jobs:
               env:
                   VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
 
-            - name: Install ovsx
-              run: npm install -g ovsx
-
+            # - name: Install ovsx
+            #   run: npm install -g ovsx
             # - name: Publish to Open VSIX
             #   run: |
             #       ovsx verify-pat fjakobs

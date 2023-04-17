@@ -16,6 +16,7 @@ Features:
 -   Find references
 -   Go to symbol
 -   Document outline
+-   Rename symbol
 
 ## Why????
 

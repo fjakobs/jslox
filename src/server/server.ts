@@ -37,6 +37,7 @@ const loxServer = new LoxLspServer(documents, (type, params) => {
 let hasWorkspaceFolderCapability = false;
 let hasSemanticTokensCapability = false;
 let hasSymbolProviderCapability = false;
+let hasRenameCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
     const capabilities = params.capabilities;
@@ -44,6 +45,7 @@ connection.onInitialize((params: InitializeParams) => {
     hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders);
     hasSemanticTokensCapability = !!capabilities.textDocument?.semanticTokens?.requests?.full;
     hasSymbolProviderCapability = !!capabilities.textDocument?.documentSymbol?.hierarchicalDocumentSymbolSupport;
+    hasRenameCapability = !!capabilities.textDocument?.rename?.prepareSupport;
 
     const result: InitializeResult = {
         capabilities: {
@@ -52,6 +54,12 @@ connection.onInitialize((params: InitializeParams) => {
             referencesProvider: true,
         },
     };
+
+    if (hasRenameCapability) {
+        result.capabilities.renameProvider = {
+            prepareProvider: true,
+        };
+    }
 
     if (hasSymbolProviderCapability) {
         console.log(capabilities.textDocument?.semanticTokens);
@@ -86,6 +94,14 @@ connection.onInitialized(() => {
             connection.console.log("Workspace folder change event received.");
         });
     }
+});
+
+connection.onPrepareRename((params: TextDocumentPositionParams) => {
+    return loxServer.onPrepareRename(params.textDocument.uri, params.position);
+});
+
+connection.onRenameRequest((params) => {
+    return loxServer.onRename(params.textDocument.uri, params.position, params.newName);
 });
 
 connection.onDefinition((params: TextDocumentPositionParams) => {
