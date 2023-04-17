@@ -2,7 +2,7 @@
     "name": "lox-lsp",
     "displayName": "Lox LSP",
     "description": "LSP server for the lox language",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "publisher": "fabianjakobs",
     "license": "Apache-2.0",
     "icon": "images/logo.png",
