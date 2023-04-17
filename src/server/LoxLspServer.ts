@@ -1,8 +1,8 @@
 import {
     Definition,
     DefinitionLink,
-    Diagnostic,
-    DiagnosticSeverity,
+    DocumentHighlight,
+    DocumentHighlightKind,
     DocumentSymbol,
     HandlerResult,
     Location,
@@ -17,81 +17,9 @@ import {
     WorkspaceEdit,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { ErrorReporter } from "../jslox/Error";
-import { Scanner } from "../jslox/Scanner";
-import { Parser } from "../jslox/Parser";
-import { Resolver } from "../jslox/Resolver";
 import { Token } from "../jslox/Token";
-import { SemanticToken, SemanticTokenAnalyzer, TOKEN_TO_ID } from "./SemanticTokenAnalyzer";
-
-export class LoxDocument {
-    public diagnostics: Diagnostic[] = [];
-    public hadError: boolean = false;
-    public definitions: Map<Token, Token[]> = new Map();
-    public references: Map<Token, Token> = new Map();
-    public semanticTokens: SemanticToken[] = [];
-    public documentSymbols?: DocumentSymbol[];
-
-    constructor(public document: TextDocument) {}
-
-    analyze() {
-        const source = this.document.getText();
-
-        this.diagnostics = [];
-        this.semanticTokens = [];
-
-        this.hadError = false;
-        const reporter: ErrorReporter = {
-            error: (token: Token, message: string) => {
-                this.hadError = true;
-                const diagnostic: Diagnostic = {
-                    severity: DiagnosticSeverity.Error,
-                    range: {
-                        start: this.document.positionAt(token.start),
-                        end: this.document.positionAt(token.end),
-                    },
-                    message: message,
-                    source: "Lox",
-                };
-                this.diagnostics.push(diagnostic);
-            },
-            warn: (token: Token, message: string) => {
-                const diagnostic: Diagnostic = {
-                    severity: DiagnosticSeverity.Warning,
-                    range: {
-                        start: this.document.positionAt(token.start),
-                        end: this.document.positionAt(token.end),
-                    },
-                    message: message,
-                    source: "Lox",
-                };
-                this.diagnostics.push(diagnostic);
-            },
-            runtimeError: function (): void {},
-        };
-
-        const tokens = new Scanner(source, reporter).scanTokens();
-        const parser = new Parser(tokens, reporter);
-
-        const statements = parser.parse();
-        if (!statements || this.hadError) {
-            return;
-        }
-
-        const resolver = new Resolver(reporter);
-        resolver.resolve(statements);
-
-        if (statements && !this.hadError) {
-            const analyzer = new SemanticTokenAnalyzer();
-            analyzer.analyze(statements, resolver);
-            this.semanticTokens = analyzer.tokens;
-            this.documentSymbols = analyzer.documentSymbols;
-        }
-
-        this.definitions = resolver.definitions;
-        this.references = resolver.references;
-    }
-}
+import { TOKEN_TO_ID } from "./SemanticTokenAnalyzer";
+import { LoxDocument } from "./LoxDocument";
 
 type LspEventListner = ((type: "diagnostics", params: PublishDiagnosticsParams) => void) &
     ((type: "foo", params: any) => void);
@@ -209,36 +137,15 @@ export class LoxLspServer {
             return null;
         }
 
-        const offset = loxDocument.document.offsetAt(position);
-        let definition: Token | undefined = undefined;
-        for (const [def, references] of loxDocument.definitions) {
-            if (def.start <= offset && def.end >= offset) {
-                definition = def;
-                break;
-            }
-
-            for (const reference of references || []) {
-                if (reference.start <= offset && reference.end >= offset) {
-                    definition = def;
-                    break;
-                }
-            }
-        }
-        if (!definition) {
-            return null;
-        }
-
-        const edits: Array<TextEdit> = [definition]
-            .concat(loxDocument.definitions.get(definition) || [])
-            .map((token) => {
-                return {
-                    range: {
-                        start: loxDocument.document.positionAt(token.start),
-                        end: loxDocument.document.positionAt(token.end),
-                    },
-                    newText: newName,
-                };
-            });
+        const edits: Array<TextEdit> = loxDocument.findAllFromPosition(position).map((token) => {
+            return {
+                range: {
+                    start: loxDocument.document.positionAt(token.start),
+                    end: loxDocument.document.positionAt(token.end),
+                },
+                newText: newName,
+            };
+        });
 
         return {
             changes: {
@@ -264,7 +171,7 @@ export class LoxLspServer {
             if (definition.start <= offset && definition.end >= offset) {
                 return {
                     range: {
-                        start: definition,
+                        start: loxDocument.document.positionAt(definition.start),
                         end: loxDocument.document.positionAt(definition.end),
                     },
                     placeholder: definition.lexeme,
@@ -274,7 +181,7 @@ export class LoxLspServer {
                 if (reference.start <= offset && reference.end >= offset) {
                     return {
                         range: {
-                            start: reference,
+                            start: loxDocument.document.positionAt(reference.start),
                             end: loxDocument.document.positionAt(reference.end),
                         },
                         placeholder: reference.lexeme,
@@ -283,5 +190,27 @@ export class LoxLspServer {
             }
         }
         return null;
+    }
+
+    onDocumentHighlight(uri: string, position: Position): HandlerResult<DocumentHighlight[] | null | undefined, void> {
+        const loxDocument = this.loxDocuments.get(uri);
+        if (!loxDocument || !loxDocument.definitions) {
+            return null;
+        }
+
+        const symbols = loxDocument.findAllFromPosition(position);
+        if (!symbols.length) {
+            return null;
+        }
+
+        return symbols.map((symbol) => {
+            return {
+                range: {
+                    start: loxDocument.document.positionAt(symbol.start),
+                    end: loxDocument.document.positionAt(symbol.end),
+                },
+                kind: DocumentHighlightKind.Text,
+            };
+        });
     }
 }

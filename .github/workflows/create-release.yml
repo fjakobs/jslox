@@ -34,7 +34,7 @@ jobs:
         uses: ./.github/workflows/create-build-artifacts.yml
         secrets: inherit
         with:
-            release_tag: release-v${{ needs.prepare-release.outputs.version }}
+            release_tag: v${{ needs.prepare-release.outputs.version }}
 
     create-release:
         if: startsWith(github.event.head_commit.message, 'Release:') || github.event_name == 'workflow_dispatch'

@@ -30,7 +30,7 @@ jobs:
               env:
                   RELEASE_TAG: ${{ inputs.release_tag }}
 
-            - uses: actions/upload-artifact@v2
+            - uses: actions/upload-artifact@v3
               with:
                   name: lox-lsp
                   path: "*.vsix"

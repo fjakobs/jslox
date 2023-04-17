@@ -17,6 +17,7 @@ Features:
 -   Go to symbol
 -   Document outline
 -   Rename symbol
+-   Highlight document: highlights all references to the symbol scoped to this file
 
 ## Why????
 

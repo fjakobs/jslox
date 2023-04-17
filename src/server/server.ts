@@ -34,18 +34,12 @@ const loxServer = new LoxLspServer(documents, (type, params) => {
     }
 });
 
-let hasWorkspaceFolderCapability = false;
-let hasSemanticTokensCapability = false;
-let hasSymbolProviderCapability = false;
-let hasRenameCapability = false;
-
 connection.onInitialize((params: InitializeParams) => {
     const capabilities = params.capabilities;
 
-    hasWorkspaceFolderCapability = !!(capabilities.workspace && !!capabilities.workspace.workspaceFolders);
-    hasSemanticTokensCapability = !!capabilities.textDocument?.semanticTokens?.requests?.full;
-    hasSymbolProviderCapability = !!capabilities.textDocument?.documentSymbol?.hierarchicalDocumentSymbolSupport;
-    hasRenameCapability = !!capabilities.textDocument?.rename?.prepareSupport;
+    const hasSemanticTokensCapability = !!capabilities.textDocument?.semanticTokens?.requests?.full;
+    const hasSymbolProviderCapability = !!capabilities.textDocument?.documentSymbol?.hierarchicalDocumentSymbolSupport;
+    const hasRenameCapability = !!capabilities.textDocument?.rename?.prepareSupport;
 
     const result: InitializeResult = {
         capabilities: {
@@ -54,6 +48,10 @@ connection.onInitialize((params: InitializeParams) => {
             referencesProvider: true,
         },
     };
+
+    if (capabilities.textDocument?.documentHighlight) {
+        result.capabilities.documentHighlightProvider = true;
+    }
 
     if (hasRenameCapability) {
         result.capabilities.renameProvider = {
@@ -78,23 +76,10 @@ connection.onInitialize((params: InitializeParams) => {
         };
     }
 
-    if (hasWorkspaceFolderCapability) {
-        result.capabilities.workspace = {
-            workspaceFolders: {
-                supported: true,
-            },
-        };
-    }
     return result;
 });
 
-connection.onInitialized(() => {
-    if (hasWorkspaceFolderCapability) {
-        connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-            connection.console.log("Workspace folder change event received.");
-        });
-    }
-});
+connection.onInitialized(() => {});
 
 connection.onPrepareRename((params: TextDocumentPositionParams) => {
     return loxServer.onPrepareRename(params.textDocument.uri, params.position);
@@ -114,6 +99,10 @@ connection.onReferences((params: TextDocumentPositionParams) => {
 
 connection.onDocumentSymbol((params) => {
     return loxServer.onDocumentSymbol(params.textDocument.uri);
+});
+
+connection.onDocumentHighlight((params) => {
+    return loxServer.onDocumentHighlight(params.textDocument.uri, params.position);
 });
 
 connection.languages.semanticTokens.on((params) => {
