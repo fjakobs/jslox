@@ -5,6 +5,7 @@
     "version": "0.0.2",
     "publisher": "fabianjakobs",
     "license": "Apache-2.0",
+    "icon": "images/logo.png",
     "repository": {
         "type": "git",
         "url": "https://github.com/fjakobs/jslox"
